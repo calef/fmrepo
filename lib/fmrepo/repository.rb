@@ -45,12 +45,13 @@ module FMRepo
       abs = @root.join(rel)
       return rel unless abs.exist?
 
-      base = rel.sub_ext("")
+      base = rel.sub_ext('')
       ext = rel.extname
       i = 2
       loop do
         candidate = Pathname.new("#{base}-#{i}#{ext}")
         return candidate unless @root.join(candidate).exist?
+
         i += 1
       end
     end
@@ -68,6 +69,7 @@ module FMRepo
       root_s = @root.to_s
       abs_s  = abs.to_s
       return if abs_s == root_s || abs_s.start_with?(root_s + File::SEPARATOR)
+
       raise UnsafePathError, "Path is outside repository root: #{abs}"
     end
   end

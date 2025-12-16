@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-$LOAD_PATH.unshift File.expand_path("../lib", __dir__)
-require "fmrepo"
+$LOAD_PATH.unshift File.expand_path('../lib', __dir__)
+require 'fmrepo'
 
-require "minitest/autorun"
-require "tmpdir"
-require "fileutils"
+require 'minitest/autorun'
+require 'tmpdir'
+require 'fileutils'

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "test_helper"
+require 'test_helper'
 
 class RecordTest < Minitest::Test
   def setup
@@ -13,23 +13,23 @@ class RecordTest < Minitest::Test
   end
 
   def test_record_initialization
-    rec = FMRepo::Record.new({ "title" => "Test" }, body: "Content")
-    assert_equal "Test", rec["title"]
-    assert_equal "Content", rec.body
+    rec = FMRepo::Record.new({ 'title' => 'Test' }, body: 'Content')
+    assert_equal 'Test', rec['title']
+    assert_equal 'Content', rec.body
     assert rec.new_record?
     refute rec.persisted?
   end
 
   def test_front_matter_access
-    rec = FMRepo::Record.new({ "title" => "Test", "tags" => ["ruby"] })
-    assert_equal "Test", rec["title"]
-    assert_equal ["ruby"], rec["tags"]
+    rec = FMRepo::Record.new({ 'title' => 'Test', 'tags' => ['ruby'] })
+    assert_equal 'Test', rec['title']
+    assert_equal ['ruby'], rec['tags']
   end
 
   def test_front_matter_assignment
     rec = FMRepo::Record.new
-    rec["title"] = "New Title"
-    assert_equal "New Title", rec["title"]
+    rec['title'] = 'New Title'
+    assert_equal 'New Title', rec['title']
   end
 
   def test_parse_front_matter_with_valid_yaml
@@ -45,8 +45,8 @@ class RecordTest < Minitest::Test
     MD
 
     fm, body = FMRepo::Record.parse_front_matter(content)
-    assert_equal "Test Post", fm["title"]
-    assert_equal ["ruby", "rails"], fm["tags"]
+    assert_equal 'Test Post', fm['title']
+    assert_equal %w[ruby rails], fm['tags']
     assert_equal "This is the body.\n", body
   end
 
@@ -64,10 +64,10 @@ class RecordTest < Minitest::Test
   end
 
   def test_parse_front_matter_without_front_matter
-    content = "Just plain content"
+    content = 'Just plain content'
     fm, body = FMRepo::Record.parse_front_matter(content)
     assert_equal({}, fm)
-    assert_equal "Just plain content", body
+    assert_equal 'Just plain content', body
   end
 
   def test_parse_front_matter_with_ellipsis_delimiter
@@ -80,7 +80,7 @@ class RecordTest < Minitest::Test
     MD
 
     fm, body = FMRepo::Record.parse_front_matter(content)
-    assert_equal "Test", fm["title"]
+    assert_equal 'Test', fm['title']
     assert_equal "Body\n", body
   end
 
@@ -112,40 +112,40 @@ class RecordTest < Minitest::Test
   end
 
   def test_serialize_with_front_matter_and_body
-    rec = FMRepo::Record.new({ "title" => "Test" }, body: "Body content")
+    rec = FMRepo::Record.new({ 'title' => 'Test' }, body: 'Body content')
     serialized = rec.serialize
 
     assert serialized.start_with?("---\n")
-    assert serialized.include?("title: Test")
-    assert serialized.include?("Body content")
+    assert serialized.include?('title: Test')
+    assert serialized.include?('Body content')
     assert serialized.end_with?("\n")
   end
 
   def test_serialize_with_empty_front_matter
-    rec = FMRepo::Record.new({}, body: "Just body")
+    rec = FMRepo::Record.new({}, body: 'Just body')
     serialized = rec.serialize
 
     assert serialized.start_with?("---\n")
-    assert serialized.include?("Just body")
+    assert serialized.include?('Just body')
   end
 
   def test_id_returns_relative_path
-    path = File.join(@tmpdir, "test.md")
-    rec = FMRepo::Record.new({ "title" => "Test" }, path: path, repo: @repo)
+    path = File.join(@tmpdir, 'test.md')
+    rec = FMRepo::Record.new({ 'title' => 'Test' }, path: path, repo: @repo)
 
-    assert_equal "test.md", rec.id
+    assert_equal 'test.md', rec.id
   end
 
   def test_id_returns_nil_without_path_or_repo
-    rec = FMRepo::Record.new({ "title" => "Test" })
+    rec = FMRepo::Record.new({ 'title' => 'Test' })
     assert_nil rec.id
   end
 
   def test_rel_path_returns_pathname
-    path = File.join(@tmpdir, "test.md")
-    rec = FMRepo::Record.new({ "title" => "Test" }, path: path, repo: @repo)
+    path = File.join(@tmpdir, 'test.md')
+    rec = FMRepo::Record.new({ 'title' => 'Test' }, path: path, repo: @repo)
 
     assert_instance_of Pathname, rec.rel_path
-    assert_equal "test.md", rec.rel_path.to_s
+    assert_equal 'test.md', rec.rel_path.to_s
   end
 end
