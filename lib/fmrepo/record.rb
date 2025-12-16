@@ -86,26 +86,41 @@ module FMRepo
       end
 
       def parse_front_matter(raw)
-        s = raw.to_s
-        return [{}, s] unless s.start_with?("---\n") || s.start_with?("---\r\n")
+        content = raw.to_s
+        return [{}, content] unless front_matter_content?(content)
 
-        lines = s.lines
-        return [{}, s] unless lines.first&.strip == '---'
+        lines = content.lines
+        closing_index = front_matter_end_index(lines)
+        raise ParseError, 'Unclosed front matter delimiter' unless closing_index
 
-        i = 1
-        while i < lines.length
-          if ['---', '...'].include?(lines[i].strip)
-            yaml_text = lines[1...i].join
-            body_text = lines[(i + 1)..].join
-            fm = yaml_text.strip.empty? ? {} : YAML.safe_load(yaml_text, permitted_classes: [Date, Time], aliases: false) || {}
-            return [fm, body_text.sub(/\A\r?\n/, '')]
-          end
-          i += 1
-        end
+        yaml_text = lines[1...closing_index].join
+        body_text = lines[(closing_index + 1)..].join
+        fm = load_front_matter_yaml(yaml_text)
 
-        raise ParseError, 'Unclosed front matter delimiter'
+        [fm, strip_leading_newline(body_text)]
       rescue Psych::Exception => e
         raise ParseError, "YAML parse error: #{e.message}"
+      end
+
+      private
+
+      def front_matter_content?(content)
+        content.start_with?("---\n", "---\r\n") && content.lines.first&.strip == '---'
+      end
+
+      def front_matter_end_index(lines)
+        index = lines[1..]&.find_index { |line| %w[--- ...].include?(line.strip) }
+        index && (index + 1)
+      end
+
+      def load_front_matter_yaml(yaml_text)
+        return {} if yaml_text.strip.empty?
+
+        YAML.safe_load(yaml_text, permitted_classes: [Date, Time], aliases: false) || {}
+      end
+
+      def strip_leading_newline(text)
+        text.sub(/\A\r?\n/, '')
       end
     end
 

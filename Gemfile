@@ -6,5 +6,7 @@ source 'https://rubygems.org'
 gemspec
 
 gem 'minitest', '~> 5.0'
+gem 'mutex_m'
+gem 'ostruct'
 gem 'rake', '~> 13.0'
 gem 'rubocop', '~> 1.66', require: false
