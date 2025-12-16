@@ -327,18 +327,65 @@ $ ruby -Ilib:test test/integration_test.rb
 
 ## Development
 
-After checking out the repo, run tests:
+After checking out the repo, use the provided scripts for development:
+
+### Bootstrap
+
+Set up your development environment:
 
 ```bash
-$ bundle install
+$ script/bootstrap
+```
+
+This will ensure you have the correct Ruby version and all dependencies installed.
+
+### Running Tests
+
+Run the test suite:
+
+```bash
+$ script/test
+```
+
+Or use rake directly:
+
+```bash
 $ rake test
 ```
+
+### CI Build
+
+Run the full CI build locally:
+
+```bash
+$ script/cibuild
+```
+
+### Update Dependencies
+
+Update gems to their latest versions:
+
+```bash
+$ script/update
+```
+
+### Building the Gem
 
 To build the gem:
 
 ```bash
 $ gem build fmrepo.gemspec
 ```
+
+### Development Scripts
+
+The `script/` directory contains several helper scripts:
+
+- `script/bootstrap` - Set up development environment
+- `script/test` - Run test suite
+- `script/cibuild` - Run CI build
+- `script/update` - Update dependencies
+- `script/ensure-*` - Ensure specific tools are installed (bundler, ruby, homebrew, etc.)
 
 ## Contributing
 
