@@ -33,3 +33,6 @@ jobs:
           VALIDATE_MARKDOWN: true
           VALIDATE_YAML: true
           VALIDATE_JSON: true
+          # Use repository's RuboCop configuration
+          RUBY_CONFIG_FILE: .rubocop.yml
+          LINTER_RULES_PATH: .
