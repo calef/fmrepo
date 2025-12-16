@@ -20,7 +20,9 @@ module FMRepo
     s = str.to_s.strip.downcase
     s = s.gsub(/['"]/,"")
     s = s.gsub(/[^a-z0-9]+/, "-")
-    s = s.gsub(/\A-+|-+\z/, "")
+    # Remove leading/trailing dashes by chomping instead of regex
+    s = s[1..-1] while s.start_with?("-")
+    s = s[0..-2] while s.end_with?("-")
     s.empty? ? "untitled" : s
   end
 end
