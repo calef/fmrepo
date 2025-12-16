@@ -3,7 +3,7 @@
 module FMRepo
   module Predicates
     def includes(x)
-      ->(v) do
+      lambda do |v|
         case v
         when Array then v.include?(x)
         when String then v.include?(x.to_s)
@@ -18,7 +18,7 @@ module FMRepo
     end
 
     def present
-      ->(v) do
+      lambda do |v|
         case v
         when nil then false
         when String then !v.strip.empty?
@@ -45,8 +45,8 @@ module FMRepo
 
     def comparable?(v, x)
       return false unless v.respond_to?(:<=>) && x.respond_to?(:<=>)
+
       # Test if they're actually comparable by attempting a comparison
-      v <=> x
       true
     rescue ArgumentError, NoMethodError
       false

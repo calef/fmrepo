@@ -44,14 +44,13 @@ module FMRepo
     end
 
     # ---- execution ----
-    def each(&blk) = to_a.each(&blk)
+    def each(&) = to_a.each(&)
 
     def to_a
       docs = load_all
       docs = apply_filters(docs)
       docs = apply_orders(docs)
-      docs = apply_offset_limit(docs)
-      docs
+      apply_offset_limit(docs)
     end
 
     def first = limit(1).to_a.first
@@ -61,6 +60,7 @@ module FMRepo
       rel = Pathname.new(id.to_s)
       abs = @repo.abs(rel)
       raise NotFound, "No such file: #{rel}" unless abs.exist?
+
       @model.load_from_path(repo: @repo, abs_path: abs)
     end
 
@@ -73,6 +73,7 @@ module FMRepo
     def load_all
       cfg = @model.config
       raise ArgumentError, "#{@model.name} has no scope glob" unless cfg.glob
+
       paths = @repo.glob(cfg.glob)
       paths = apply_excludes(paths, cfg.exclude)
       paths.map { |p| @model.load_from_path(repo: @repo, abs_path: p) }
@@ -80,6 +81,7 @@ module FMRepo
 
     def apply_excludes(paths, exclude_patterns)
       return paths if exclude_patterns.nil? || exclude_patterns.empty?
+
       paths.reject do |p|
         rel = @repo.rel(p).to_s
         exclude_patterns.any? { |pat| File.fnmatch?(pat, rel) }
@@ -110,7 +112,7 @@ module FMRepo
           bv = value_for(b, field)
           cmp = compare_with_nil(av, bv)
           cmp = -cmp if dir == :desc
-          break unless cmp == 0
+          break unless cmp.zero?
         end
         cmp
       end
@@ -125,11 +127,11 @@ module FMRepo
     def value_for(rec, field)
       f = field.to_s
       case f
-      when "_id"       then rec.id
-      when "_path"     then rec.path&.to_s
-      when "_rel_path" then rec.rel_path&.to_s
-      when "_mtime"    then rec.mtime
-      when "_model"    then rec.class.name
+      when '_id'       then rec.id
+      when '_path'     then rec.path&.to_s
+      when '_rel_path' then rec.rel_path&.to_s
+      when '_mtime'    then rec.mtime
+      when '_model'    then rec.class.name
       else
         rec.front_matter[f]
       end
@@ -137,15 +139,16 @@ module FMRepo
 
     def compare_with_nil(a, b)
       return 0 if a.nil? && b.nil?
-      return 1 if a.nil?  # nil last for asc
+      return 1 if a.nil? # nil last for asc
       return -1 if b.nil?
+
       a <=> b
     rescue ArgumentError, NoMethodError
       a.to_s <=> b.to_s
     end
 
     def normalize_keys(hash)
-      hash.each_with_object({}) { |(k, v), acc| acc[k.to_s] = v }
+      hash.transform_keys(&:to_s)
     end
   end
 end
