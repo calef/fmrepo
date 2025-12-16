@@ -1,2 +1,350 @@
-# fmrepo
-File-Backed Front-Matter Markdown ORM for Static-Site Repos
+# FMRepo
+
+**File-Backed Front-Matter Markdown ORM for Static-Site Repositories**
+
+FMRepo provides an Active Record-like interface for managing Markdown files with YAML front matter in static site repositories. Perfect for Jekyll-style collections and custom static site generators.
+
+## Features
+
+- **Active Record-style API**: Familiar `where`, `order`, `limit`, `find`, `create!` methods
+- **Chainable queries**: Build complex queries with immutable relation objects
+- **Type-per-directory**: Define one model class per collection/directory
+- **Custom naming rules**: Control file naming and collision resolution
+- **Safe filesystem operations**: Atomic writes, path validation, and collision handling
+- **Flexible predicates**: Query with equality, inclusion, comparisons, regex, and custom predicates
+- **Custom relations**: Extend with domain-specific query methods
+
+## Installation
+
+Add this line to your application's Gemfile:
+
+```ruby
+gem 'fmrepo'
+```
+
+And then execute:
+
+```bash
+$ bundle install
+```
+
+Or install it yourself as:
+
+```bash
+$ gem install fmrepo
+```
+
+## Quick Start
+
+```ruby
+require 'fmrepo'
+
+# Define a model for your collection
+class Place < FMRepo::Record
+  scope glob: "_places/**/*.{md,markdown}"
+
+  naming do |front_matter:, **|
+    slug = FMRepo.slugify(front_matter["title"])
+    "_places/#{slug}.md"
+  end
+
+  def title = self["title"]
+  def county = self["county"]
+end
+
+# Bind to a repository
+repo = FMRepo::Repository.new(root: "/path/to/site")
+Place.bind(repo)
+
+# Query records
+Place.where("county" => "King").order("title").limit(10).each do |place|
+  puts place.title
+end
+
+# Create new records
+place = Place.create!(
+  { "title" => "Seattle", "county" => "King" },
+  body: "Seattle is the largest city in Washington state."
+)
+
+# Update and save
+place["population"] = 750_000
+place.save!
+
+# Delete records
+place.destroy
+```
+
+## Core Concepts
+
+### Repository
+
+The `FMRepo::Repository` class handles all filesystem operations:
+
+```ruby
+repo = FMRepo::Repository.new(root: "/path/to/site")
+```
+
+Features:
+- Path safety: All operations are validated to be within the repository root
+- Atomic writes: Files are written atomically to prevent corruption
+- Collision resolution: Automatically handles filename conflicts
+
+### Record
+
+`FMRepo::Record` is the base class for your models. Each record represents a single Markdown file with front matter.
+
+```ruby
+class Post < FMRepo::Record
+  scope glob: "_posts/**/*.md"
+
+  naming do |front_matter:, **|
+    date = front_matter["date"]&.strftime("%Y-%m-%d") || Time.now.strftime("%Y-%m-%d")
+    slug = FMRepo.slugify(front_matter["title"])
+    "_posts/#{date}-#{slug}.md"
+  end
+end
+```
+
+**Binding**: Connect your model to a repository:
+
+```ruby
+Post.bind(repo)
+```
+
+**Scoping**: Define which files belong to this model:
+
+```ruby
+scope glob: "_posts/**/*.md", exclude: ["_posts/drafts/**"]
+```
+
+**Naming rules**: Control how new files are named:
+
+```ruby
+naming do |front_matter:, body:, repo:, **opts|
+  # Return a repo-relative path string
+  "_posts/#{FMRepo.slugify(front_matter["title"])}.md"
+end
+```
+
+### Relation
+
+`FMRepo::Relation` provides chainable query interface:
+
+```ruby
+# Basic queries
+Post.where("published" => true)
+    .order("date", :desc)
+    .limit(10)
+    .to_a
+
+# With predicates
+Post.where("tags" => FMRepo.includes("ruby"))
+    .where("date" => FMRepo.gt(Date.new(2024, 1, 1)))
+```
+
+**Custom relations**: Add domain-specific query methods:
+
+```ruby
+class PostRelation < FMRepo::Relation
+  def published
+    where("published" => true)
+  end
+
+  def recent(days = 7)
+    where("date" => FMRepo.gte(Date.today - days))
+  end
+end
+
+class Post < FMRepo::Record
+  relation_class PostRelation
+end
+
+# Usage
+Post.published.recent.to_a
+```
+
+## Query API
+
+### Class Methods
+
+- `all` - Returns a relation for all records
+- `where(criteria)` - Filter records by criteria
+- `order(field, direction)` - Sort by field (`:asc` or `:desc`)
+- `limit(n)` - Limit number of results
+- `offset(n)` - Skip first n results
+- `find(id)` - Find by repo-relative path
+- `find_by(criteria)` - Find first matching record
+- `create!(attrs, body:, path:)` - Create and save a new record
+
+### Instance Methods
+
+- `save!` - Save changes to disk
+- `destroy` - Delete the file
+- `reload` - Refresh from disk
+- `[key]` - Get front matter value
+- `[key]=` - Set front matter value
+- `body` - Get/set body content
+- `id` - Get repo-relative path
+- `persisted?` - Check if saved
+- `new_record?` - Check if new
+
+### Predicates
+
+Built-in predicates for querying:
+
+```ruby
+# Inclusion
+FMRepo.includes("ruby")        # Array/String includes value
+FMRepo.in_set(["a", "b", "c"]) # Value is in set
+
+# Presence
+FMRepo.present                  # Not nil/empty
+
+# Pattern matching
+FMRepo.matches(/regex/)         # String matches regex
+
+# Comparisons
+FMRepo.gt(5)                    # Greater than
+FMRepo.gte(5)                   # Greater than or equal
+FMRepo.lt(5)                    # Less than
+FMRepo.lte(5)                   # Less than or equal
+FMRepo.between(1, 10)           # Between values
+```
+
+### Reserved Fields
+
+Query special built-in fields:
+
+- `_id` - Repo-relative path as string
+- `_path` - Absolute path as string
+- `_rel_path` - Repo-relative path as string
+- `_mtime` - File modification time
+- `_model` - Model class name
+
+```ruby
+Place.where("_mtime" => FMRepo.gt(Time.now - 3600))
+     .order("_id")
+     .to_a
+```
+
+## Advanced Usage
+
+### Multiple Collections
+
+```ruby
+repo = FMRepo::Repository.new(root: "/path/to/site")
+
+Place.bind(repo)
+Post.bind(repo)
+Organization.bind(repo)
+
+# Each model operates on its own scope
+places = Place.all.to_a
+posts = Post.where("published" => true).to_a
+```
+
+### Custom Predicates
+
+Create custom predicates for complex queries:
+
+```ruby
+# Define a custom predicate
+def published_in_year(year)
+  ->(date) { date.is_a?(Date) && date.year == year }
+end
+
+# Use it
+Post.where("date" => published_in_year(2024))
+```
+
+### Front Matter Parsing
+
+FMRepo parses YAML front matter automatically:
+
+```markdown
+---
+title: Example Post
+tags:
+  - ruby
+  - rails
+published: true
+---
+
+This is the body content.
+```
+
+Becomes:
+
+```ruby
+post["title"]     # => "Example Post"
+post["tags"]      # => ["ruby", "rails"]
+post["published"] # => true
+post.body         # => "This is the body content.\n"
+```
+
+### Collision Resolution
+
+When creating files, collisions are automatically resolved:
+
+```ruby
+Place.create!({"title" => "Seattle"})  # => _places/seattle.md
+Place.create!({"title" => "Seattle"})  # => _places/seattle-2.md
+Place.create!({"title" => "Seattle"})  # => _places/seattle-3.md
+```
+
+## Error Handling
+
+FMRepo defines specific error classes:
+
+- `FMRepo::Error` - Base error class
+- `FMRepo::NotBoundError` - Model not bound to repository
+- `FMRepo::NotFound` - Record not found
+- `FMRepo::UnsafePathError` - Path outside repository root
+- `FMRepo::ParseError` - YAML parsing error
+
+```ruby
+begin
+  Place.find("nonexistent.md")
+rescue FMRepo::NotFound => e
+  puts "Not found: #{e.message}"
+end
+```
+
+## Testing
+
+Run the test suite:
+
+```bash
+$ rake test
+```
+
+Or with Ruby directly:
+
+```bash
+$ ruby -Ilib:test test/integration_test.rb
+```
+
+## Development
+
+After checking out the repo, run tests:
+
+```bash
+$ bundle install
+$ rake test
+```
+
+To build the gem:
+
+```bash
+$ gem build fmrepo.gemspec
+```
+
+## Contributing
+
+Bug reports and pull requests are welcome on GitHub at https://github.com/calef/fmrepo.
+
+## License
+
+The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+

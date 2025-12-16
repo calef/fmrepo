@@ -38,7 +38,7 @@ module FMRepo
     def lte(x) = ->(v) { comparable?(v, x) && v <= x }
 
     def between(a, b)
-      ->(v) { comparable?(v, a) && comparable?(v, b) && v >= a && v <= b }
+      ->(v) { v && comparable?(v, a) && comparable?(v, b) && v >= a && v <= b }
     end
 
     private
