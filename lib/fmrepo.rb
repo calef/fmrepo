@@ -4,6 +4,8 @@ require "yaml"
 require "pathname"
 require "fileutils"
 require "securerandom"
+require "date"
+require "time"
 
 require_relative "fmrepo/version"
 require_relative "fmrepo/errors"
