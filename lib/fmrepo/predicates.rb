@@ -2,11 +2,11 @@
 
 module FMRepo
   module Predicates
-    def includes(x)
-      ->(v) do
-        case v
-        when Array then v.include?(x)
-        when String then v.include?(x.to_s)
+    def includes(expected)
+      lambda do |value|
+        case value
+        when Array then value.include?(expected)
+        when String then value.include?(expected.to_s)
         else false
         end
       end
@@ -18,7 +18,7 @@ module FMRepo
     end
 
     def present
-      ->(v) do
+      lambda do |v|
         case v
         when nil then false
         when String then !v.strip.empty?
@@ -32,21 +32,26 @@ module FMRepo
       ->(v) { v.is_a?(String) && v.match?(regex) }
     end
 
-    def gt(x)  = ->(v) { comparable?(v, x) && v >  x }
-    def gte(x) = ->(v) { comparable?(v, x) && v >= x }
-    def lt(x)  = ->(v) { comparable?(v, x) && v <  x }
-    def lte(x) = ->(v) { comparable?(v, x) && v <= x }
+    def gt(threshold)  = ->(value) { comparable?(value, threshold) && value >  threshold }
+    def gte(threshold) = ->(value) { comparable?(value, threshold) && value >= threshold }
+    def lt(threshold)  = ->(value) { comparable?(value, threshold) && value <  threshold }
+    def lte(threshold) = ->(value) { comparable?(value, threshold) && value <= threshold }
 
-    def between(a, b)
-      ->(v) { v && comparable?(v, a) && comparable?(v, b) && v >= a && v <= b }
+    def between(lower_bound, upper_bound)
+      lambda do |value|
+        value &&
+          comparable?(value, lower_bound) &&
+          comparable?(value, upper_bound) &&
+          value >= lower_bound && value <= upper_bound
+      end
     end
 
     private
 
-    def comparable?(v, x)
-      return false unless v.respond_to?(:<=>) && x.respond_to?(:<=>)
+    def comparable?(value, other)
+      return false unless value.respond_to?(:<=>) && other.respond_to?(:<=>)
+
       # Test if they're actually comparable by attempting a comparison
-      v <=> x
       true
     rescue ArgumentError, NoMethodError
       false

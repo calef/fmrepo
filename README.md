@@ -313,15 +313,17 @@ end
 
 ## Testing
 
-Run the test suite:
+Run RuboCop and the test suite:
 
 ```bash
-$ rake test
+$ script/test
 ```
 
-Or with Ruby directly:
+Or run them individually:
 
 ```bash
+$ bundle exec rubocop
+$ bundle exec rake test
 $ ruby -Ilib:test test/integration_test.rb
 ```
 
@@ -341,16 +343,16 @@ This will ensure you have the correct Ruby version and all dependencies installe
 
 ### Running Tests
 
-Run the test suite:
+Run linting and tests together:
 
 ```bash
 $ script/test
 ```
 
-Or use rake directly:
+Or run just the test suite:
 
 ```bash
-$ rake test
+$ bundle exec rake test
 ```
 
 ### CI Build
@@ -394,4 +396,3 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/calef/
 ## License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
-

@@ -9,7 +9,10 @@ Gem::Specification.new do |spec|
   spec.email = ['chris@crickertech.com']
 
   spec.summary = 'Active Record-style ORM for front-matter Markdown files'
-  spec.description = 'FMRepo provides an Active Record-like interface for managing Markdown files with YAML front matter in static site repositories. Perfect for Jekyll-style collections and custom static site generators.'
+  spec.description = <<~DESCRIPTION
+    FMRepo provides an Active Record-like interface for managing Markdown files with YAML front matter in static site repositories.
+    Perfect for Jekyll-style collections and custom static site generators.
+  DESCRIPTION
   spec.homepage = 'https://github.com/calef/fmrepo'
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 3.4.7'
@@ -17,17 +20,11 @@ Gem::Specification.new do |spec|
   spec.metadata['homepage_uri'] = spec.homepage
   spec.metadata['source_code_uri'] = 'https://github.com/calef/fmrepo'
   spec.metadata['changelog_uri'] = 'https://github.com/calef/fmrepo/blob/main/CHANGELOG.md'
+  spec.metadata['rubygems_mfa_required'] = 'true'
 
   # Specify which files should be added to the gem when it is released.
   spec.files = Dir.glob('{lib}/**/*') + %w[LICENSE README.md]
   spec.bindir = 'exe'
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
-
-  # Runtime dependencies - minimal, only stdlib needed
-  # YAML, Pathname, FileUtils, SecureRandom are all part of Ruby stdlib
-
-  # Development dependencies
-  spec.add_development_dependency 'minitest', '~> 5.0'
-  spec.add_development_dependency 'rake', '~> 13.0'
 end

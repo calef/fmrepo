@@ -4,6 +4,15 @@ module FMRepo
   class Relation
     include Enumerable
 
+    SPECIAL_FIELD_READERS = {
+      '_id' => lambda(&:id),
+      '_path' => ->(rec) { rec.path&.to_s },
+      '_rel_path' => ->(rec) { rec.rel_path&.to_s },
+      '_mtime' => lambda(&:mtime),
+      '_model' => ->(rec) { rec.class.name }
+    }.freeze
+
+    # rubocop:disable Metrics/ParameterLists
     def initialize(repo:, model:, filters: [], orders: [], limit_n: nil, offset_n: 0)
       @repo = repo
       @model = model
@@ -12,6 +21,7 @@ module FMRepo
       @limit_n = limit_n
       @offset_n = offset_n
     end
+    # rubocop:enable Metrics/ParameterLists
 
     attr_reader :repo, :model
 
@@ -35,23 +45,28 @@ module FMRepo
       )
     end
 
-    def limit(n)
-      self.class.new(repo: @repo, model: @model, filters: @filters, orders: @orders, limit_n: Integer(n), offset_n: @offset_n)
+    def limit(count)
+      self.class.new(
+        repo: @repo, model: @model, filters: @filters, orders: @orders,
+        limit_n: Integer(count), offset_n: @offset_n
+      )
     end
 
-    def offset(n)
-      self.class.new(repo: @repo, model: @model, filters: @filters, orders: @orders, limit_n: @limit_n, offset_n: Integer(n))
+    def offset(count)
+      self.class.new(
+        repo: @repo, model: @model, filters: @filters, orders: @orders,
+        limit_n: @limit_n, offset_n: Integer(count)
+      )
     end
 
     # ---- execution ----
-    def each(&blk) = to_a.each(&blk)
+    def each(&) = to_a.each(&)
 
     def to_a
       docs = load_all
       docs = apply_filters(docs)
       docs = apply_orders(docs)
-      docs = apply_offset_limit(docs)
-      docs
+      apply_offset_limit(docs)
     end
 
     def first = limit(1).to_a.first
@@ -61,6 +76,7 @@ module FMRepo
       rel = Pathname.new(id.to_s)
       abs = @repo.abs(rel)
       raise NotFound, "No such file: #{rel}" unless abs.exist?
+
       @model.load_from_path(repo: @repo, abs_path: abs)
     end
 
@@ -73,6 +89,7 @@ module FMRepo
     def load_all
       cfg = @model.config
       raise ArgumentError, "#{@model.name} has no scope glob" unless cfg.glob
+
       paths = @repo.glob(cfg.glob)
       paths = apply_excludes(paths, cfg.exclude)
       paths.map { |p| @model.load_from_path(repo: @repo, abs_path: p) }
@@ -80,6 +97,7 @@ module FMRepo
 
     def apply_excludes(paths, exclude_patterns)
       return paths if exclude_patterns.nil? || exclude_patterns.empty?
+
       paths.reject do |p|
         rel = @repo.rel(p).to_s
         exclude_patterns.any? { |pat| File.fnmatch?(pat, rel) }
@@ -110,7 +128,7 @@ module FMRepo
           bv = value_for(b, field)
           cmp = compare_with_nil(av, bv)
           cmp = -cmp if dir == :desc
-          break unless cmp == 0
+          break unless cmp.zero?
         end
         cmp
       end
@@ -123,29 +141,24 @@ module FMRepo
     end
 
     def value_for(rec, field)
-      f = field.to_s
-      case f
-      when "_id"       then rec.id
-      when "_path"     then rec.path&.to_s
-      when "_rel_path" then rec.rel_path&.to_s
-      when "_mtime"    then rec.mtime
-      when "_model"    then rec.class.name
-      else
-        rec.front_matter[f]
-      end
+      reader = SPECIAL_FIELD_READERS[field.to_s]
+      return reader.call(rec) if reader
+
+      rec.front_matter[field.to_s]
     end
 
-    def compare_with_nil(a, b)
-      return 0 if a.nil? && b.nil?
-      return 1 if a.nil?  # nil last for asc
-      return -1 if b.nil?
-      a <=> b
+    def compare_with_nil(left, right)
+      return 0 if left.nil? && right.nil?
+      return 1 if left.nil? # nil last for asc
+      return -1 if right.nil?
+
+      left <=> right
     rescue ArgumentError, NoMethodError
-      a.to_s <=> b.to_s
+      left.to_s <=> right.to_s
     end
 
     def normalize_keys(hash)
-      hash.each_with_object({}) { |(k, v), acc| acc[k.to_s] = v }
+      hash.transform_keys(&:to_s)
     end
   end
 end

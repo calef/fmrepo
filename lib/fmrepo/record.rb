@@ -12,7 +12,8 @@ module FMRepo
       end
 
       def naming(&block)
-        raise ArgumentError, "naming requires a block" unless block
+        raise ArgumentError, 'naming requires a block' unless block
+
         @config = config.with(naming_rule: block)
       end
 
@@ -30,9 +31,7 @@ module FMRepo
         self
       end
 
-      def repo
-        @repo
-      end
+      attr_reader :repo
 
       # ---- ActiveRecord-ish class API ----
       def all
@@ -47,12 +46,12 @@ module FMRepo
         relation.order(field, dir)
       end
 
-      def limit(n)
-        relation.limit(n)
+      def limit(count)
+        relation.limit(count)
       end
 
-      def offset(n)
-        relation.offset(n)
+      def offset(count)
+        relation.offset(count)
       end
 
       def find(id)
@@ -63,14 +62,15 @@ module FMRepo
         relation.find_by(criteria)
       end
 
-      def create!(attrs = {}, body: "", path: nil, repo: nil, **opts)
-        rec = new(attrs, body: body, path: path, repo: (repo || self.repo), **opts)
+      def create!(attrs = {}, body: '', path: nil, repo: nil, **)
+        rec = new(attrs, body: body, path: path, repo: repo || self.repo, **)
         rec.save!
       end
 
       def relation(repo: nil)
         r = repo || self.repo
         raise NotBoundError, "#{name} is not bound to a repository" unless r
+
         relation_class.new(repo: r, model: self)
       end
 
@@ -90,20 +90,20 @@ module FMRepo
         return [{}, s] unless s.start_with?("---\n") || s.start_with?("---\r\n")
 
         lines = s.lines
-        return [{}, s] unless lines.first&.strip == "---"
+        return [{}, s] unless lines.first&.strip == '---'
 
         i = 1
         while i < lines.length
-          if ["---", "..."].include?(lines[i].strip)
+          if ['---', '...'].include?(lines[i].strip)
             yaml_text = lines[1...i].join
             body_text = lines[(i + 1)..].join
             fm = yaml_text.strip.empty? ? {} : YAML.safe_load(yaml_text, permitted_classes: [Date, Time], aliases: false) || {}
-            return [fm, body_text.sub(/\A\r?\n/, "")]
+            return [fm, body_text.sub(/\A\r?\n/, '')]
           end
           i += 1
         end
 
-        raise ParseError, "Unclosed front matter delimiter"
+        raise ParseError, 'Unclosed front matter delimiter'
       rescue Psych::Exception => e
         raise ParseError, "YAML parse error: #{e.message}"
       end
@@ -113,7 +113,7 @@ module FMRepo
     attr_reader :repo, :path, :mtime
     attr_accessor :body
 
-    def initialize(attrs = {}, body: "", path: nil, repo: nil, **_opts)
+    def initialize(attrs = {}, body: '', path: nil, repo: nil, **_opts)
       @front_matter = normalize_keys(attrs || {})
       @body = body.to_s
       @repo = repo
@@ -123,11 +123,10 @@ module FMRepo
       @mtime = nil
     end
 
-    def front_matter
-      @front_matter
-    end
+    attr_reader :front_matter
 
     def [](key) = @front_matter[key.to_s]
+
     def []=(key, value)
       @front_matter[key.to_s] = value
       @dirty = true
@@ -135,11 +134,13 @@ module FMRepo
 
     def id
       return nil unless @repo && @path
+
       @repo.rel(@path).to_s
     end
 
     def rel_path
       return nil unless @repo && @path
+
       @repo.rel(@path)
     end
 
@@ -164,13 +165,15 @@ module FMRepo
     def destroy
       ensure_repo!
       return self unless @path
+
       @repo.delete(@path)
       self
     end
 
     def reload
       ensure_repo!
-      raise NotFound, "Record has no path" unless @path
+      raise NotFound, 'Record has no path' unless @path
+
       fresh = self.class.load_from_path(repo: @repo, abs_path: @path)
       @front_matter = fresh.front_matter
       @body = fresh.body
@@ -182,7 +185,7 @@ module FMRepo
 
     def serialize
       fm = @front_matter || {}
-      yaml = fm.empty? ? "" : YAML.dump(fm).sub(/\A---\s*\r?\n/, "")
+      yaml = fm.empty? ? '' : YAML.dump(fm).sub(/\A---\s*\r?\n/, '')
       out = +"---\n"
       out << yaml
       out << "\n" unless out.end_with?("\n")
@@ -212,7 +215,7 @@ module FMRepo
     end
 
     def normalize_keys(hash)
-      hash.each_with_object({}) { |(k, v), acc| acc[k.to_s] = v }
+      hash.transform_keys(&:to_s)
     end
   end
 end
