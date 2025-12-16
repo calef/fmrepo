@@ -42,9 +42,8 @@ begin
     def tags = self['tags'] || []
   end
 
-  # Create and bind repository
-  repo = FMRepo::Repository.new(root: site_root)
-  Place.bind(repo)
+  # Configure repository on the class
+  Place.repository(site_root)
 
   puts "\n=== Creating Places ==="
 

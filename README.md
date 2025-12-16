@@ -39,8 +39,9 @@ $ gem install fmrepo
 ```ruby
 require 'fmrepo'
 
-# Define a model for your collection
+# Define a model for your collection with repository path
 class Place < FMRepo::Record
+  repository "/path/to/site"  # Configure repository at class definition
   scope glob: "_places/**/*.{md,markdown}"
 
   naming do |front_matter:, **|
@@ -52,11 +53,7 @@ class Place < FMRepo::Record
   def county = self["county"]
 end
 
-# Bind to a repository
-repo = FMRepo::Repository.new(root: "/path/to/site")
-Place.bind(repo)
-
-# Query records
+# Query records (no separate bind step needed)
 Place.where("county" => "King").order("title").limit(10).each do |place|
   puts place.title
 end
@@ -74,6 +71,33 @@ place.save!
 # Delete records
 place.destroy
 ```
+
+## Differences from Active Record
+
+While FMRepo provides an Active Record-like interface, there are key differences:
+
+| Feature | Active Record | FMRepo |
+|---------|--------------|--------|
+| **Data Source** | Database tables | Markdown files with front matter |
+| **Model Configuration** | Database connection configured globally | Repository path configured per model class |
+| **Record Identity** | Primary key (usually `id` column) | File path relative to repository root |
+| **Schema** | Defined in migrations | Flexible YAML front matter (no schema) |
+| **Relationships** | Associations (has_many, belongs_to) | Not supported (v1) |
+| **Transactions** | Database transactions | Not supported (file-per-record) |
+| **Callbacks** | Before/after hooks | Not supported (v1) |
+| **Validations** | Built-in validation framework | Not supported (v1) |
+| **Query Interface** | SQL-based with rich DSL | File-based with predicates |
+| **Persistence** | Row in database | Markdown file with YAML front matter |
+
+**Key Similarities:**
+- Chainable query interface (`where`, `order`, `limit`)
+- Instance methods for persistence (`save!`, `destroy`, `reload`)
+- Class methods for finding records (`find`, `find_by`, `all`)
+- Attribute accessors (front matter fields via `[]` and `[]=`)
+
+**When to use FMRepo vs Active Record:**
+- Use FMRepo for static site generators, documentation sites, or file-based content management
+- Use Active Record for traditional web applications with relational data and complex queries
 
 ## Core Concepts
 
@@ -96,6 +120,7 @@ Features:
 
 ```ruby
 class Post < FMRepo::Record
+  repository "/path/to/site"  # Configure repository path
   scope glob: "_posts/**/*.md"
 
   naming do |front_matter:, **|
@@ -106,10 +131,14 @@ class Post < FMRepo::Record
 end
 ```
 
-**Binding**: Connect your model to a repository:
+**Repository Configuration**: Specify the repository path at class definition:
 
 ```ruby
-Post.bind(repo)
+class Post < FMRepo::Record
+  repository "/path/to/site"  # Path string
+  # or
+  repository FMRepo::Repository.new(root: "/path/to/site")  # Repository instance
+end
 ```
 
 **Scoping**: Define which files belong to this model:
@@ -233,11 +262,21 @@ Place.where("_mtime" => FMRepo.gt(Time.now - 3600))
 ### Multiple Collections
 
 ```ruby
-repo = FMRepo::Repository.new(root: "/path/to/site")
+# Each model class specifies its own repository
+class Place < FMRepo::Record
+  repository "/path/to/site"
+  scope glob: "_places/**/*.md"
+end
 
-Place.bind(repo)
-Post.bind(repo)
-Organization.bind(repo)
+class Post < FMRepo::Record
+  repository "/path/to/site"
+  scope glob: "_posts/**/*.md"
+end
+
+class Organization < FMRepo::Record
+  repository "/path/to/site"
+  scope glob: "_organizations/**/*.md"
+end
 
 # Each model operates on its own scope
 places = Place.all.to_a
