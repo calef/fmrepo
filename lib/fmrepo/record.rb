@@ -97,7 +97,7 @@ module FMRepo
           if ["---", "..."].include?(lines[i].strip)
             yaml_text = lines[1...i].join
             body_text = lines[(i + 1)..].join
-            fm = yaml_text.strip.empty? ? {} : YAML.safe_load(yaml_text, permitted_classes: [Date, Time], aliases: true) || {}
+            fm = yaml_text.strip.empty? ? {} : YAML.safe_load(yaml_text, permitted_classes: [Date, Time], aliases: false) || {}
             return [fm, body_text.sub(/\A\r?\n/, "")]
           end
           i += 1

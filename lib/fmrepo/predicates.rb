@@ -44,7 +44,12 @@ module FMRepo
     private
 
     def comparable?(v, x)
-      v.respond_to?(:<=>) && x.respond_to?(:<=>)
+      return false unless v.respond_to?(:<=>) && x.respond_to?(:<=>)
+      # Test if they're actually comparable by attempting a comparison
+      v <=> x
+      true
+    rescue ArgumentError, NoMethodError
+      false
     end
   end
 

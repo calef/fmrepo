@@ -140,7 +140,7 @@ module FMRepo
       return 1 if a.nil?  # nil last for asc
       return -1 if b.nil?
       a <=> b
-    rescue StandardError
+    rescue ArgumentError, NoMethodError
       a.to_s <=> b.to_s
     end
 

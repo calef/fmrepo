@@ -23,11 +23,16 @@ module FMRepo
       dir = abs.dirname
       FileUtils.mkdir_p(dir)
 
-      tmp = dir.join("#{abs.basename}.tmp.#{Process.pid}.#{SecureRandom.hex(4)}")
-      tmp.write(content)
-      FileUtils.mv(tmp.to_s, abs.to_s)
-    ensure
-      FileUtils.rm_f(tmp.to_s) if tmp && tmp.exist?
+      require 'tempfile'
+      tmp = Tempfile.create([abs.basename.to_s, '.tmp'], dir)
+      begin
+        tmp.write(content)
+        tmp.close
+        FileUtils.mv(tmp.path, abs.to_s)
+      ensure
+        tmp.close unless tmp.closed?
+        tmp.unlink if tmp && File.exist?(tmp.path)
+      end
     end
 
     def delete(abs_path)
