@@ -30,6 +30,7 @@ module FMRepo
       def repository(path_or_repo = nil)
         if path_or_repo
           @repo_config = path_or_repo
+          @repository = nil  # Clear cached repository when setting new config
           self
         else
           # Lazy-initialize repository on first access
