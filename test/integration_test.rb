@@ -43,7 +43,7 @@ class IntegrationTest < Minitest::Test
   def setup
     @tmpdir = Dir.mktmpdir
     @repo = FMRepo::Repository.new(root: @tmpdir)
-
+    
     # Use repository configuration instead of bind
     Place.repository(@repo)
     PlaceWithCustomRelation.repository(@repo)
