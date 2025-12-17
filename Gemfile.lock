@@ -13,7 +13,7 @@ GEM
     lint_roller (1.1.0)
     minitest (5.16.3)
     mutex_m (0.3.0)
-    ostruct (0.1.0)
+    ostruct (0.6.3)
     parallel (1.27.0)
     parser (3.3.10.0)
       ast (~> 2.4.1)
