@@ -113,7 +113,7 @@ end
 
 ### Setup
 ```bash
-./script/bootstrap  # Install Ruby 3.4.7, Bundler 4.0.1, and gems
+./script/bootstrap  # Install Ruby 3.4.7, Bundler 4.0.2, and gems
 ```
 
 ### Running Tests
@@ -200,7 +200,7 @@ Front matter fields starting with `_` are reserved:
 ## Dependencies
 
 - Ruby 3.4.7+ (specified in `.ruby-version`)
-- Bundler 4.0.1 (specified in `.bundler-version`)
+- Bundler 4.0.2 (specified in `.bundler-version`)
 - Standard library only (no external gem dependencies for runtime)
 - Minitest for testing
 
