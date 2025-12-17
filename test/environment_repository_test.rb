@@ -57,4 +57,17 @@ class EnvironmentRepositoryTest < Minitest::Test
     EnvModel.create!({ 'title' => 'DefaultBack' }, body: 'Body')
     assert File.exist?(File.join(@tmpdir, '_items', 'defaultback.md'))
   end
+
+  def test_raises_not_bound_error_when_repository_not_configured
+    FMRepo.reset_configuration!
+    FMRepo.environment = 'unconfigured-env'
+    EnvModel.instance_variable_set(:@repository, nil)
+    EnvModel.remove_instance_variable(:@repo_config) if EnvModel.instance_variable_defined?(:@repo_config)
+
+    error = assert_raises(FMRepo::NotBoundError) do
+      EnvModel.create!({ 'title' => 'Test' }, body: 'Body')
+    end
+
+    assert_match(/No repository configured for role :default in environment "unconfigured-env"/, error.message)
+  end
 end

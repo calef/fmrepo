@@ -6,6 +6,7 @@ module FMRepo
       @config = config
       @cache = Hash.new { |h, k| h[k] = {} } # env => { role => repo }
       @overrides = Hash.new { |h, k| h[k] = {} }
+      @temp_dirs = [] # Track temporary directories for cleanup
     end
 
     def fetch(role:, environment:)
@@ -34,8 +35,27 @@ module FMRepo
     end
 
     def reset!
+      cleanup_temp_dirs
       @cache.clear
       @overrides.clear
+    end
+
+    def cleanup_temp_dirs
+      @temp_dirs.each do |dir|
+        FileUtils.rm_rf(dir) if File.exist?(dir)
+      rescue StandardError => e
+        warn "Failed to cleanup temporary directory #{dir}: #{e.message}"
+      end
+      @temp_dirs.clear
+    end
+
+    def restore_override(role:, environment:, previous_override:, previous_cache:)
+      env = environment.to_s
+      role = role.to_sym
+      @overrides[env].delete(role)
+      @cache[env].delete(role)
+      @overrides[env][role] = previous_override unless previous_override == :__none__
+      @cache[env][role] = previous_cache unless previous_cache == :__none__
     end
 
     private
@@ -53,7 +73,12 @@ module FMRepo
       when FMRepo::Repository
         value
       when String, Pathname
-        root = temp_repo_root?(value) ? Dir.mktmpdir("fmrepo-#{role}-#{environment}-") : value
+        if temp_repo_root?(value)
+          root = Dir.mktmpdir("fmrepo-#{role}-#{environment}-")
+          @temp_dirs << root
+        else
+          root = value
+        end
         FMRepo::Repository.new(root:)
       else
         raise ArgumentError,
@@ -82,13 +107,12 @@ module FMRepo
       def cleanup
         return if @released
 
-        @registry.instance_exec(@role, @environment, @previous_override,
-                                @previous_cache) do |role, environment, previous_override, previous_cache|
-          @overrides[environment].delete(role)
-          @cache[environment].delete(role)
-          @overrides[environment][role] = previous_override unless previous_override == :__none__
-          @cache[environment][role] = previous_cache unless previous_cache == :__none__
-        end
+        @registry.restore_override(
+          role: @role,
+          environment: @environment,
+          previous_override: @previous_override,
+          previous_cache: @previous_cache
+        )
         @released = true
       end
     end

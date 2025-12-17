@@ -37,6 +37,28 @@ class EnvironmentResolutionTest < Minitest::Test
     assert_equal 'jekyll-env', FMRepo.environment
   end
 
+  def test_prefers_rack_env_over_rails_env
+    ENV.delete('FMREPO_ENV')
+    ENV.delete('JEKYLL_ENV')
+    ENV['RACK_ENV'] = 'rack-env'
+    ENV['RAILS_ENV'] = 'rails-env'
+
+    assert_equal 'rack-env', FMRepo.environment
+
+    FMRepo.environment = nil
+    ENV.delete('RACK_ENV')
+    assert_equal 'rails-env', FMRepo.environment
+  end
+
+  def test_falls_back_to_development_when_no_env_vars_set
+    ENV.delete('FMREPO_ENV')
+    ENV.delete('JEKYLL_ENV')
+    ENV.delete('RACK_ENV')
+    ENV.delete('RAILS_ENV')
+
+    assert_equal 'development', FMRepo.environment
+  end
+
   private
 
   def restore_env(snapshot)
