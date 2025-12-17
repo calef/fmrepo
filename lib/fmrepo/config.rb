@@ -11,7 +11,11 @@ module FMRepo
     def load_yaml(path)
       return self unless File.exist?(path)
 
-      data = YAML.safe_load_file(path, aliases: false) || {}
+      begin
+        data = YAML.safe_load_file(path, aliases: false) || {}
+      rescue Psych::SyntaxError => e
+        raise "Failed to parse YAML configuration file #{path}: #{e.message}"
+      end
       data.each do |role, env_map|
         role_key = role.to_sym
         repositories[role_key] ||= {}

@@ -20,31 +20,51 @@ require_relative 'fmrepo/relation'
 require_relative 'fmrepo/test_helpers'
 
 module FMRepo
+  @mutex = Mutex.new
+
   def self.environment
-    @environment ||= ENV['FMREPO_ENV'] || ENV['JEKYLL_ENV'] || ENV['RACK_ENV'] || ENV['RAILS_ENV'] || 'development'
+    @mutex.synchronize do
+      @environment ||= ENV['FMREPO_ENV'] || ENV['JEKYLL_ENV'] || ENV['RACK_ENV'] || ENV['RAILS_ENV'] || 'development'
+    end
   end
 
   def self.environment=(env)
-    @environment = env&.to_s
+    @mutex.synchronize do
+      @environment = env&.to_s
+    end
   end
 
   def self.config
-    @config ||= Config.new
+    @mutex.synchronize do
+      @config ||= Config.new
+    end
   end
 
   def self.configure
-    yield config
-    repository_registry.reset!
+    @mutex.synchronize do
+      cfg = @config ||= Config.new
+      @mutex.unlock
+      begin
+        yield cfg
+      ensure
+        @mutex.lock
+      end
+      @repository_registry&.reset!
+    end
   end
 
   def self.repository_registry
-    @repository_registry ||= RepositoryRegistry.new(config)
+    @mutex.synchronize do
+      @repository_registry ||= RepositoryRegistry.new(@config || Config.new)
+    end
   end
 
   def self.reset_configuration!
-    @config = Config.new
-    load_default_config_file
-    @repository_registry = RepositoryRegistry.new(config)
+    @mutex.synchronize do
+      @config = Config.new
+      @repository_registry = RepositoryRegistry.new(@config)
+      load_default_config_file
+    end
   end
 
   def self.load_default_config_file

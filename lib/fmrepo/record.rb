@@ -147,8 +147,8 @@ module FMRepo
         case config
         when nil
           raise NotBoundError,
-                "#{name} has no repository configured. Use `repository '/path/to/site'` in your class definition or configure \
-                repositories for environment #{FMRepo.environment.inspect}."
+                "#{name} has no repository configured. Use `repository '/path/to/site'` in your class definition or configure " \
+                "repositories for environment #{FMRepo.environment.inspect}."
         when FMRepo::Repository
           config
         when String, Pathname
