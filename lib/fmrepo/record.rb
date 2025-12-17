@@ -8,7 +8,7 @@ module FMRepo
       end
 
       def scope(glob:, exclude: nil, extensions: nil)
-        @config = config.with(glob: glob, exclude: exclude, extensions: extensions)
+        @config = config.with(glob:, exclude:, extensions:)
       end
 
       def naming(&block)
@@ -30,26 +30,28 @@ module FMRepo
       def repository(path_or_repo = nil)
         if path_or_repo
           @repo_config = path_or_repo
-          @repository = nil  # Clear cached repository when setting new config
+          @repository = nil # Clear cached repository when setting new config
           self
         else
           # Lazy-initialize repository on first access
-          @repo ||= case @repo_config
-                    when nil
-                      raise NotBoundError, "#{name} has no repository configured. Use `repository '/path/to/site'` in your class definition."
-                    when FMRepo::Repository
-                      @repo_config
-                    when String, Pathname
-                      FMRepo::Repository.new(root: @repo_config)
-                    else
-                      raise ArgumentError, "repository must be a path string or Repository instance, got #{@repo_config.class}"
-                    end
+          @repository ||= case @repo_config
+                          when nil
+                            raise NotBoundError,
+                                  "#{name} has no repository configured. Use `repository '/path/to/site'` in your class definition."
+                          when FMRepo::Repository
+                            @repo_config
+                          when String, Pathname
+                            FMRepo::Repository.new(root: @repo_config)
+                          else
+                            raise ArgumentError,
+                                  "repository must be a path string or Repository instance, got #{@repo_config.class}"
+                          end
         end
       end
 
       # Alias for backward compatibility (deprecated)
       def bind(repo)
-        warn "[DEPRECATION] `bind` is deprecated. Use `repository` instead."
+        warn '[DEPRECATION] `bind` is deprecated. Use `repository` instead.'
         repository(repo)
       end
 
@@ -87,7 +89,7 @@ module FMRepo
       end
 
       def create!(attrs = {}, body: '', path: nil, repo: nil, **)
-        rec = new(attrs, body: body, path: path, repo: repo || self.repo, **)
+        rec = new(attrs, body:, path:, repo: repo || self.repo, **)
         rec.save!
       end
 
@@ -102,7 +104,7 @@ module FMRepo
       def load_from_path(repo:, abs_path:)
         raw = repo.read(abs_path)
         fm, body = parse_front_matter(raw)
-        rec = new(fm, body: body, path: abs_path, repo: repo)
+        rec = new(fm, body:, path: abs_path, repo:)
         rec.instance_variable_set(:@new_record, false)
         rec.instance_variable_set(:@dirty, false)
         rec.instance_variable_set(:@mtime, abs_path.exist? ? abs_path.mtime : nil)

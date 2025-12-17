@@ -131,7 +131,7 @@ class RecordTest < Minitest::Test
 
   def test_id_returns_relative_path
     path = File.join(@tmpdir, 'test.md')
-    rec = FMRepo::Record.new({ 'title' => 'Test' }, path: path, repo: @repo)
+    rec = FMRepo::Record.new({ 'title' => 'Test' }, path:, repo: @repo)
 
     assert_equal 'test.md', rec.id
   end
@@ -143,7 +143,7 @@ class RecordTest < Minitest::Test
 
   def test_rel_path_returns_pathname
     path = File.join(@tmpdir, 'test.md')
-    rec = FMRepo::Record.new({ 'title' => 'Test' }, path: path, repo: @repo)
+    rec = FMRepo::Record.new({ 'title' => 'Test' }, path:, repo: @repo)
 
     assert_instance_of Pathname, rec.rel_path
     assert_equal 'test.md', rec.rel_path.to_s
