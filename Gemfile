@@ -8,6 +8,6 @@ gemspec
 gem 'minitest', '~> 5.0'
 gem 'mutex_m'
 gem 'ostruct'
-gem 'rake', '~> 13.0'
+gem 'rake', '~> 13.3'
 gem 'rubocop', '~> 1.66', require: false
 gem 'simplecov', '~> 0.22', require: false
