@@ -2,7 +2,8 @@
 
 ## File-Backed Front-Matter Markdown ORM for Static-Site Repositories
 
-FMRepo provides an Active Record-like interface for managing Markdown files with YAML front matter in static site repositories. Perfect for Jekyll-style collections and custom static site generators.
+FMRepo provides an Active Record-like interface for managing Markdown files with YAML front matter in static site
+repositories. Perfect for Jekyll-style collections and custom static site generators.
 
 ## Features
 
@@ -371,7 +372,8 @@ ruby -Ilib:test test/integration_test.rb
 
 ### Environment-driven repositories (Active Record style)
 
-FMRepo can pick repositories by environment instead of configuring each model manually. The environment defaults to `FMREPO_ENV`, then `JEKYLL_ENV`, then `RACK_ENV`, then `RAILS_ENV`, falling back to `development`.
+FMRepo can pick repositories by environment instead of configuring each model manually. The environment defaults to
+`FMREPO_ENV`, then `JEKYLL_ENV`, then `RACK_ENV`, then `RAILS_ENV`, falling back to `development`.
 
 ```yaml
 # .fmrepo.yml
@@ -417,6 +419,7 @@ end
 All models using the configured role now write to a disposable repo in tests without subclassing.
 
 Best practices:
+
 - Keep repository paths in `.fmrepo.yml`; avoid calling `repository` in production code unless you truly need an override.
 - Use roles (`repository_role :places`) for collections that map to different roots; default role works for single-repo apps.
 - For tests, set the `test` entry to `<tmp>` or wrap examples with `FMRepo::TestHelpers.with_temp_repo` to isolate filesystem writes.
