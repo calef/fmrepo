@@ -13,7 +13,7 @@ FMRepo is a Ruby gem that provides an Active Record-style ORM for managing Markd
 
 ## Project Structure
 
-```
+```text
 lib/
   fmrepo.rb          # Main entry point, loads all components
   fmrepo/
