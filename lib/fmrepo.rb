@@ -63,8 +63,8 @@ module FMRepo
     @mutex.synchronize do
       @config = Config.new
       @repository_registry = RepositoryRegistry.new(@config)
+      load_default_config_file
     end
-    load_default_config_file
   end
 
   def self.load_default_config_file
