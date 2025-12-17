@@ -42,9 +42,11 @@ module FMRepo
 
     def cleanup_temp_dirs
       @temp_dirs.each do |dir|
-        FileUtils.rm_rf(dir) if File.exist?(dir)
-      rescue StandardError => e
-        warn "Failed to cleanup temporary directory #{dir}: #{e.message}"
+        begin
+          FileUtils.rm_rf(dir) if File.exist?(dir)
+        rescue StandardError => e
+          warn "Failed to cleanup temporary directory #{dir}: #{e.message}"
+        end
       end
       @temp_dirs.clear
     end
