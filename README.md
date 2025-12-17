@@ -53,7 +53,7 @@ class Place < FMRepo::Record
   def county = self["county"]
 end
 
-# Query records (no separate bind step needed)
+# Query records
 Place.where("county" => "King").order("title").limit(10).each do |place|
   puts place.title
 end
@@ -368,6 +368,60 @@ bundle exec rubocop
 bundle exec rake test
 ruby -Ilib:test test/integration_test.rb
 ```
+
+### Environment-driven repositories (Active Record style)
+
+FMRepo can pick repositories by environment instead of configuring each model manually. The environment defaults to `FMREPO_ENV`, then `JEKYLL_ENV`, then `RACK_ENV`, then `RAILS_ENV`, falling back to `development`.
+
+```yaml
+# .fmrepo.yml
+default:
+  development: /sites/dev
+  test: <tmp>         # create a temp repo automatically
+  production: /sites/live
+places:
+  production: /sites/live/_places
+```
+
+```ruby
+# config/initializers/fmrepo.rb
+FMRepo.configure do |c|
+  c.load_yaml('.fmrepo.yml')
+end
+```
+
+```ruby
+class Place < FMRepo::Record
+  repository_role :places   # optional; defaults to :default
+  scope glob: '_places/**/*.md'
+  naming { |front_matter:, **| "_places/#{FMRepo.slugify(front_matter['title'] || 'untitled')}.md" }
+end
+```
+
+Testing with temporary repositories:
+
+```ruby
+require 'fmrepo/test_helpers'
+
+class Minitest::Test
+  def setup
+    @repo_override = FMRepo::TestHelpers.with_temp_repo # uses FMRepo.environment
+  end
+
+  def teardown
+    @repo_override&.cleanup
+  end
+end
+```
+
+All models using the configured role now write to a disposable repo in tests without subclassing.
+
+Best practices:
+- Keep repository paths in `.fmrepo.yml`; avoid calling `repository` in production code unless you truly need an override.
+- Use roles (`repository_role :places`) for collections that map to different roots; default role works for single-repo apps.
+- For tests, set the `test` entry to `<tmp>` or wrap examples with `FMRepo::TestHelpers.with_temp_repo` to isolate filesystem writes.
+- Set `FMREPO_ENV` explicitly for non-Rails apps or scripts; Rails apps will pick up `RAILS_ENV`.
+- When you must override a single model (e.g., a one-off migration), `Model.repository('/path')` still works and bypasses the registry for that class only.
 
 ## Development
 

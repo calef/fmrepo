@@ -25,6 +25,14 @@ module FMRepo
         end
       end
 
+      def repository_role(role = nil)
+        if role
+          @repository_role = role.to_sym
+        else
+          @repository_role || (superclass.respond_to?(:repository_role) ? superclass.repository_role : :default)
+        end
+      end
+
       # Repository configuration
       # Accepts either a path string or a Repository instance
       def repository(path_or_repo = nil)
@@ -32,27 +40,13 @@ module FMRepo
           @repo_config = path_or_repo
           @repository = nil # Clear cached repository when setting new config
           self
+        elsif instance_variable_defined?(:@repo_config)
+          # If a class-level repository was configured explicitly, cache it.
+          @repository ||= build_repository_from(@repo_config)
         else
-          # Lazy-initialize repository on first access
-          @repository ||= case @repo_config
-                          when nil
-                            raise NotBoundError,
-                                  "#{name} has no repository configured. Use `repository '/path/to/site'` in your class definition."
-                          when FMRepo::Repository
-                            @repo_config
-                          when String, Pathname
-                            FMRepo::Repository.new(root: @repo_config)
-                          else
-                            raise ArgumentError,
-                                  "repository must be a path string or Repository instance, got #{@repo_config.class}"
-                          end
+          # When using environment-driven repos, always ask the registry so overrides take effect.
+          FMRepo.repository_registry.fetch(role: repository_role, environment: FMRepo.environment)
         end
-      end
-
-      # Alias for backward compatibility (deprecated)
-      def bind(repo)
-        warn '[DEPRECATION] `bind` is deprecated. Use `repository` instead.'
-        repository(repo)
       end
 
       def repo
@@ -147,6 +141,22 @@ module FMRepo
 
       def strip_leading_newline(text)
         text.sub(/\A\r?\n/, '')
+      end
+
+      def build_repository_from(config)
+        case config
+        when nil
+          raise NotBoundError,
+                "#{name} has no repository configured. Use `repository '/path/to/site'` in your class definition or configure \
+                repositories for environment #{FMRepo.environment.inspect}."
+        when FMRepo::Repository
+          config
+        when String, Pathname
+          FMRepo::Repository.new(root: config)
+        else
+          raise ArgumentError,
+                "repository must be a path string or Repository instance, got #{config.class}"
+        end
       end
     end
 
