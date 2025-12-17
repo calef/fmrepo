@@ -26,7 +26,7 @@ module FMRepo
       end
 
       # Repository configuration
-      # Accepts either a path string or a Repository instance  
+      # Accepts either a path string or a Repository instance
       def repository(path_or_repo = nil)
         if path_or_repo
           @repo_config = path_or_repo

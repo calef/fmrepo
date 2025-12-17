@@ -1,12 +1,16 @@
 # frozen_string_literal: true
 
 $LOAD_PATH.unshift File.expand_path('../lib', __dir__)
-require 'simplecov'
 
-SimpleCov.start do
-  enable_coverage :branch
-  add_filter '/test/'
-  add_group 'Library', 'lib'
+begin
+  require 'simplecov'
+  SimpleCov.start do
+    enable_coverage :branch
+    add_filter '/test/'
+    add_group 'Library', 'lib'
+  end
+rescue LoadError
+  # SimpleCov not available - continue without coverage
 end
 
 require 'fmrepo'
