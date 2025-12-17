@@ -1,6 +1,6 @@
 # FMRepo
 
-**File-Backed Front-Matter Markdown ORM for Static-Site Repositories**
+## File-Backed Front-Matter Markdown ORM for Static-Site Repositories
 
 FMRepo provides an Active Record-like interface for managing Markdown files with YAML front matter in static site repositories. Perfect for Jekyll-style collections and custom static site generators.
 
@@ -25,13 +25,13 @@ gem 'fmrepo'
 And then execute:
 
 ```bash
-$ bundle install
+bundle install
 ```
 
 Or install it yourself as:
 
 ```bash
-$ gem install fmrepo
+gem install fmrepo
 ```
 
 ## Quick Start
@@ -89,13 +89,15 @@ While FMRepo provides an Active Record-like interface, there are key differences
 | **Query Interface** | SQL-based with rich DSL | File-based with predicates |
 | **Persistence** | Row in database | Markdown file with YAML front matter |
 
-**Key Similarities:**
+### Key Similarities:
+
 - Chainable query interface (`where`, `order`, `limit`)
 - Instance methods for persistence (`save!`, `destroy`, `reload`)
 - Class methods for finding records (`find`, `find_by`, `all`)
 - Attribute accessors (front matter fields via `[]` and `[]=`)
 
-**When to use FMRepo vs Active Record:**
+### When to use FMRepo vs Active Record:
+
 - Use FMRepo for static site generators, documentation sites, or file-based content management
 - Use Active Record for traditional web applications with relational data and complex queries
 
@@ -110,6 +112,7 @@ repo = FMRepo::Repository.new(root: "/path/to/site")
 ```
 
 Features:
+
 - Path safety: All operations are validated to be within the repository root
 - Atomic writes: Files are written atomically to prevent corruption
 - Collision resolution: Automatically handles filename conflicts
@@ -355,15 +358,15 @@ end
 Run RuboCop and the test suite:
 
 ```bash
-$ script/test
+script/test
 ```
 
 Or run them individually:
 
 ```bash
-$ bundle exec rubocop
-$ bundle exec rake test
-$ ruby -Ilib:test test/integration_test.rb
+bundle exec rubocop
+bundle exec rake test
+ruby -Ilib:test test/integration_test.rb
 ```
 
 ## Development
@@ -375,7 +378,7 @@ After checking out the repo, use the provided scripts for development:
 Set up your development environment:
 
 ```bash
-$ script/bootstrap
+script/bootstrap
 ```
 
 This will ensure you have the correct Ruby version and all dependencies installed.
@@ -385,13 +388,13 @@ This will ensure you have the correct Ruby version and all dependencies installe
 Run linting and tests together:
 
 ```bash
-$ script/test
+script/test
 ```
 
 Or run just the test suite:
 
 ```bash
-$ bundle exec rake test
+bundle exec rake test
 ```
 
 ### CI Build
@@ -399,7 +402,7 @@ $ bundle exec rake test
 Run the full CI build locally:
 
 ```bash
-$ script/cibuild
+script/cibuild
 ```
 
 ### Update Dependencies
@@ -407,7 +410,7 @@ $ script/cibuild
 Update gems to their latest versions:
 
 ```bash
-$ script/update
+script/update
 ```
 
 ### Building the Gem
@@ -415,7 +418,7 @@ $ script/update
 To build the gem:
 
 ```bash
-$ gem build fmrepo.gemspec
+gem build fmrepo.gemspec
 ```
 
 ### Development Scripts
