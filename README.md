@@ -424,7 +424,8 @@ Best practices:
 - Use roles (`repository_role :places`) for collections that map to different roots; default role works for single-repo apps.
 - For tests, set the `test` entry to `<tmp>` or wrap examples with `FMRepo::TestHelpers.with_temp_repo` to isolate filesystem writes.
 - Set `FMREPO_ENV` explicitly for non-Rails apps or scripts; Rails apps will pick up `RAILS_ENV`.
-- When you must override a single model (e.g., a one-off migration), `Model.repository('/path')` still works and bypasses the registry for that class only.
+- When you must override a single model (e.g., a one-off migration), `Model.repository('/path')` still works and bypasses the registry
+  for that class only.
 
 ## Development
 
