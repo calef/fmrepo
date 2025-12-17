@@ -52,7 +52,6 @@ module FMRepo
 
       # Alias for backward compatibility (deprecated)
       def bind(repo)
-        warn '[DEPRECATION] `bind` is deprecated. Use `repository` instead.'
         repository(repo)
       end
 
