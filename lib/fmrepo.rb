@@ -62,7 +62,7 @@ module FMRepo
 
   def self.reset_configuration!
     new_config = Config.new
-    default_loaded = load_default_config_into(new_config)
+    default_loaded = load_default_config_into(new_config) ? :loaded : :not_found
     new_registry = RepositoryRegistry.new(new_config)
 
     @mutex.synchronize do
@@ -76,7 +76,7 @@ module FMRepo
     @mutex.synchronize do
       cfg = ensure_config!(load_default: false)
       loaded = load_default_config_into(cfg)
-      @default_config_loaded ||= loaded
+      @default_config_loaded ||= (loaded ? :loaded : :not_found)
     end
   end
 
@@ -102,7 +102,7 @@ module FMRepo
     def load_default_config_if_needed
       return if @default_config_loaded
 
-      @default_config_loaded = load_default_config_into(@config)
+      @default_config_loaded = load_default_config_into(@config) ? :loaded : :not_found
     end
 
     def load_default_config_into(config)
