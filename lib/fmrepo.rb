@@ -36,13 +36,13 @@ module FMRepo
 
   def self.config
     @mutex.synchronize do
-      @config ||= Config.new
+      ensure_config!
     end
   end
 
   def self.configure
     @mutex.synchronize do
-      cfg = @config ||= Config.new
+      cfg = ensure_config!
       @mutex.unlock
       begin
         yield cfg
@@ -55,25 +55,28 @@ module FMRepo
 
   def self.repository_registry
     @mutex.synchronize do
-      @repository_registry ||= RepositoryRegistry.new(@config || Config.new)
+      cfg = ensure_config!
+      @repository_registry ||= RepositoryRegistry.new(cfg)
     end
   end
 
   def self.reset_configuration!
-    new_config = Config.new
-    new_registry = RepositoryRegistry.new(new_config)
-
     @mutex.synchronize do
+      new_config = Config.new
+      default_loaded = load_default_config_into(new_config) ? :loaded : :not_found
+      new_registry = RepositoryRegistry.new(new_config)
       @config = new_config
       @repository_registry = new_registry
+      @default_config_loaded = default_loaded
     end
-
-    load_default_config_file
   end
 
   def self.load_default_config_file
-    default_path = File.expand_path('.fmrepo.yml')
-    config.load_yaml(default_path) if File.exist?(default_path)
+    @mutex.synchronize do
+      cfg = ensure_config!(load_default: false)
+      loaded = load_default_config_into(cfg)
+      @default_config_loaded ||= (loaded ? :loaded : :not_found)
+    end
   end
 
   def self.slugify(str)
@@ -84,5 +87,33 @@ module FMRepo
     s = s[1..] while s.start_with?('-')
     s = s[0..-2] while s.end_with?('-')
     s.empty? ? 'untitled' : s
+  end
+
+  class << self
+    private
+
+    def ensure_config!(load_default: true)
+      @config ||= Config.new
+      load_default_config_if_needed if load_default
+      @config
+    end
+
+    def load_default_config_if_needed
+      return if @default_config_loaded
+
+      @default_config_loaded = load_default_config_into(@config) ? :loaded : :not_found
+    end
+
+    def load_default_config_into(config)
+      default_path = default_config_path
+      return false unless File.exist?(default_path)
+
+      config.load_yaml(default_path)
+      true
+    end
+
+    def default_config_path
+      File.expand_path('.fmrepo.yml')
+    end
   end
 end

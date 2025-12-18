@@ -385,10 +385,14 @@ places:
   production: /sites/live/_places
 ```
 
+FMRepo automatically loads `.fmrepo.yml` from the current working directory on first access to `FMRepo.config` or
+`FMRepo.repository_registry`, or when you use a model that needs repository configuration. If you keep the file elsewhere,
+point the configuration at it explicitly:
+
 ```ruby
 # config/initializers/fmrepo.rb
 FMRepo.configure do |c|
-  c.load_yaml('.fmrepo.yml')
+  c.load_yaml('config/fmrepo.yml')
 end
 ```
 
