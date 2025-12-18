@@ -44,6 +44,7 @@ script/
 ## Coding Conventions
 
 ### Ruby Style
+
 - Use 2-space indentation
 - Add `# frozen_string_literal: true` to all Ruby files
 - Prefer small, focused classes over large monolithic ones
@@ -51,12 +52,14 @@ script/
 - Follow Ruby naming: `snake_case.rb` files, `CamelCase` classes/modules
 
 ### Design Patterns
+
 - Wrap all filesystem operations in `FMRepo::Repository` - never use `File` directly
 - Use immutable relation objects for queries (return new instances, don't modify)
 - Predicates should be callable objects (procs/lambdas) for flexibility
 - Model classes configure via class-level DSL methods (`repository`, `scope`, `naming`)
 
 ### Example Code Style
+
 ```ruby
 # Good: Explicit keyword arguments
 def create_record(front_matter:, body:, path: nil)
@@ -76,6 +79,7 @@ File.write(path, content)
 ## Testing Approach
 
 ### Test Structure
+
 - Use Minitest (not RSpec)
 - Inherit from `Minitest::Test`
 - Mirror runtime structure: `lib/fmrepo/foo.rb` → `test/foo_test.rb`
@@ -83,6 +87,7 @@ File.write(path, content)
 - Create inline fixtures rather than committing sample files
 
 ### Test Coverage Requirements
+
 - Test both success and failure paths
 - Cover path validation and safety checks
 - Test collision resolution in file naming
@@ -90,6 +95,7 @@ File.write(path, content)
 - Test predicate matching logic
 
 ### Example Test Pattern
+
 ```ruby
 class RecordTest < Minitest::Test
   def setup
@@ -112,11 +118,13 @@ end
 ## Development Workflow
 
 ### Setup
+
 ```bash
 ./script/bootstrap  # Install Ruby 3.4.7, Bundler 4.0.2, and gems
 ```
 
 ### Running Tests
+
 ```bash
 ./script/test            # Run RuboCop + full test suite (what CI uses)
 bundle exec rubocop      # Lint only
@@ -124,6 +132,7 @@ bundle exec rake test    # Tests only
 ```
 
 ### Before Committing
+
 1. Run `./script/test` to ensure linting passes and all tests pass
 2. Add tests for new functionality
 3. Update README.md if changing public API
@@ -132,6 +141,7 @@ bundle exec rake test    # Tests only
 ## Common Patterns
 
 ### Defining a Model
+
 ```ruby
 class Post < FMRepo::Record
   repository "/path/to/site"
@@ -148,6 +158,7 @@ end
 ```
 
 ### Custom Relations
+
 ```ruby
 class PostRelation < FMRepo::Relation
   def published
@@ -165,6 +176,7 @@ end
 ```
 
 ### Creating Records
+
 ```ruby
 # Automatic path from naming rule
 post = Post.create!(
