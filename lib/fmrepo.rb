@@ -61,11 +61,10 @@ module FMRepo
   end
 
   def self.reset_configuration!
-    new_config = Config.new
-    default_loaded = load_default_config_into(new_config) ? :loaded : :not_found
-    new_registry = RepositoryRegistry.new(new_config)
-
     @mutex.synchronize do
+      new_config = Config.new
+      default_loaded = load_default_config_into(new_config) ? :loaded : :not_found
+      new_registry = RepositoryRegistry.new(new_config)
       @config = new_config
       @repository_registry = new_registry
       @default_config_loaded = default_loaded
