@@ -2,7 +2,8 @@
 
 ## Project Overview
 
-FMRepo is a Ruby gem that provides an Active Record-style ORM for managing Markdown files with YAML front matter in static site repositories. Think Jekyll collections with a familiar query interface.
+FMRepo is a Ruby gem that provides an Active Record-style ORM for managing Markdown files with YAML front matter in
+static site repositories. Think Jekyll collections with a familiar query interface.
 
 ## Key Concepts
 
@@ -195,6 +196,7 @@ post = Post.create!(
 ## Error Handling
 
 All errors inherit from `FMRepo::Error`:
+
 - `NotBoundError` - Model not configured with repository
 - `NotFound` - Record file doesn't exist
 - `UnsafePathError` - Path escapes repository root
@@ -203,6 +205,7 @@ All errors inherit from `FMRepo::Error`:
 ## Reserved Field Names
 
 Front matter fields starting with `_` are reserved:
+
 - `_id` - Repo-relative path (string)
 - `_path` - Absolute filesystem path
 - `_rel_path` - Repo-relative path
