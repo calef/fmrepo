@@ -67,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite (56 tests)
 - Documentation and examples
 
+[0.2.3]: https://github.com/calef/fmrepo/releases/tag/v0.2.3
 [0.2.2]: https://github.com/calef/fmrepo/releases/tag/v0.2.2
 [0.2.1]: https://github.com/calef/fmrepo/releases/tag/v0.2.1
 [0.2.0]: https://github.com/calef/fmrepo/releases/tag/v0.2.0
