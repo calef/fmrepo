@@ -129,6 +129,21 @@ class RecordTest < Minitest::Test
     assert serialized.include?('Just body')
   end
 
+  def test_serialize_sorts_keys_alphabetically
+    rec = FMRepo::Record.new({ 'zebra' => 'last', 'apple' => 'first', 'middle' => 'middle' }, body: 'Body')
+    serialized = rec.serialize
+
+    # Parse the serialized content back to verify key order
+    fm, _body = FMRepo::Record.parse_front_matter(serialized)
+    keys = fm.keys
+
+    # Verify keys are in alphabetical order
+    assert_equal %w[apple middle zebra], keys
+    assert_equal 'first', fm['apple']
+    assert_equal 'middle', fm['middle']
+    assert_equal 'last', fm['zebra']
+  end
+
   def test_id_returns_relative_path
     path = File.join(@tmpdir, 'test.md')
     rec = FMRepo::Record.new({ 'title' => 'Test' }, path:, repo: @repo)

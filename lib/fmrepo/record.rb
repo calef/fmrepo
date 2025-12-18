@@ -236,7 +236,9 @@ module FMRepo
 
     def serialize
       fm = @front_matter || {}
-      yaml = fm.empty? ? '' : YAML.dump(fm).sub(/\A---\s*\r?\n/, '')
+      # Sort keys alphabetically to minimize diff sizes
+      sorted_fm = fm.sort.to_h
+      yaml = sorted_fm.empty? ? '' : YAML.dump(sorted_fm).sub(/\A---\s*\r?\n/, '')
       out = +"---\n"
       out << yaml
       out << "\n" unless out.end_with?("\n")
