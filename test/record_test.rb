@@ -133,14 +133,15 @@ class RecordTest < Minitest::Test
     rec = FMRepo::Record.new({ 'zebra' => 'last', 'apple' => 'first', 'middle' => 'middle' }, body: 'Body')
     serialized = rec.serialize
 
-    # Extract the YAML front matter content
-    lines = serialized.lines
-    yaml_lines = lines[1..3] # Skip first "---" and get key lines
+    # Parse the serialized content back to verify key order
+    fm, _body = FMRepo::Record.parse_front_matter(serialized)
+    keys = fm.keys
 
-    # Verify keys appear in alphabetical order
-    assert_equal "apple: first\n", yaml_lines[0]
-    assert_equal "middle: middle\n", yaml_lines[1]
-    assert_equal "zebra: last\n", yaml_lines[2]
+    # Verify keys are in alphabetical order
+    assert_equal %w[apple middle zebra], keys
+    assert_equal 'first', fm['apple']
+    assert_equal 'middle', fm['middle']
+    assert_equal 'last', fm['zebra']
   end
 
   def test_id_returns_relative_path
