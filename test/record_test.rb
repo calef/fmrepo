@@ -129,6 +129,20 @@ class RecordTest < Minitest::Test
     assert serialized.include?('Just body')
   end
 
+  def test_serialize_sorts_keys_alphabetically
+    rec = FMRepo::Record.new({ 'zebra' => 'last', 'apple' => 'first', 'middle' => 'middle' }, body: 'Body')
+    serialized = rec.serialize
+
+    # Extract the YAML front matter content
+    lines = serialized.lines
+    yaml_lines = lines[1..3] # Skip first "---" and get key lines
+
+    # Verify keys appear in alphabetical order
+    assert_equal "apple: first\n", yaml_lines[0]
+    assert_equal "middle: middle\n", yaml_lines[1]
+    assert_equal "zebra: last\n", yaml_lines[2]
+  end
+
   def test_id_returns_relative_path
     path = File.join(@tmpdir, 'test.md')
     rec = FMRepo::Record.new({ 'title' => 'Test' }, path:, repo: @repo)
