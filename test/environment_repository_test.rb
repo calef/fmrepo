@@ -96,7 +96,7 @@ class EnvironmentRepositoryTest < Minitest::Test
         File.write('.fmrepo.yml', <<~YAML)
           default:
             development: "#{tmpdir}"
-            test:
+            test: ~
         YAML
 
         FMRepo.reset_configuration!
