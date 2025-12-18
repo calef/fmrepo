@@ -41,21 +41,22 @@ class FMRepoTest < Minitest::Test
   end
 
   def test_default_config_file_auto_loads_for_repository_registry
-    Dir.mktmpdir('fmrepo-auto-default-') do |dir|
-      Dir.chdir(dir) do
-        File.write('.fmrepo.yml', <<~YAML)
-          default:
-            development: #{dir}/site
-        YAML
+    dir = Dir.mktmpdir('fmrepo-auto-default-')
+    Dir.chdir(dir) do
+      File.write('.fmrepo.yml', <<~YAML)
+        default:
+          development: #{dir}/site
+      YAML
 
-        FMRepo.reset_configuration!
-        clear_model_cache(DefaultModel)
+      FMRepo.reset_configuration!
+      clear_model_cache(DefaultModel)
 
-        DefaultModel.create!({ 'title' => 'Auto' }, body: 'Body')
+      DefaultModel.create!({ 'title' => 'Auto' }, body: 'Body')
 
-        assert File.exist?(File.join(dir, 'site', '_items', 'auto.md'))
-      end
+      assert File.exist?(File.join(dir, 'site', '_items', 'auto.md'))
     end
+  ensure
+    FileUtils.rm_rf(dir) if dir
   end
 
   def test_repository_registry_shares_config_with_config_object
