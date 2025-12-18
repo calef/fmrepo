@@ -63,6 +63,10 @@ module FMRepo
     def build_from_config(role:, environment:)
       env_map = @config.repositories[role]
       value = env_map && env_map[environment]
+
+      # Fall back to 'development' environment if value is nil and environment is different
+      value = env_map && env_map['development'] if value.nil? && environment != 'development'
+
       raise NotBoundError, missing_repository_message(role, environment) unless value
 
       build_repository(value, role:, environment:)
