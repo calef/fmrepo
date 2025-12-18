@@ -5,14 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-12-17
+
+### Added
+
+- Environment-driven repository resolution with role support and optional `.fmrepo.yml` configuration.
+- Test helpers for temporary repository overrides (`FMRepo::TestHelpers.with_temp_repo`).
+- Environment precedence now checks `FMREPO_ENV`, then `JEKYLL_ENV`, `RACK_ENV`, `RAILS_ENV`.
+
+### Changed
+
+- Models can declare `repository_role` and fall back to environment-driven repositories; explicit `repository` calls still
+  override per class.
+- Default repository config file location is `.fmrepo.yml` at project root.
+
 ## [0.1.1] - 2025-12-16
 
 ### Changed
+
 - Bump dependencies: rake 13.3.1, ostruct 0.6.3, minitest 5.27.0, mutex_m 0.3.0
 
 ## [0.1.0] - 2025-12-15
 
 ### Added
+
 - Initial release of FMRepo gem
 - Active Record-style API for front-matter Markdown files
 - `FMRepo::Repository` class for safe filesystem operations
@@ -32,5 +48,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite (56 tests)
 - Documentation and examples
 
+[0.2.0]: https://github.com/calef/fmrepo/releases/tag/v0.2.0
 [0.1.1]: https://github.com/calef/fmrepo/releases/tag/v0.1.1
 [0.1.0]: https://github.com/calef/fmrepo/releases/tag/v0.1.0

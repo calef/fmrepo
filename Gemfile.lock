@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    fmrepo (0.1.1)
+    fmrepo (0.2.0)
 
 GEM
   remote: https://rubygems.org/

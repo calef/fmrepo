@@ -1,0 +1,6 @@
+# Markdown lint configuration for Super-Linter
+# Disable MD024: Multiple headings with the same content
+MD024: false
+# Set line length limit to 140 characters
+MD013:
+  line_length: 140
