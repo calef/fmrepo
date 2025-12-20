@@ -71,7 +71,7 @@ module FMRepo
         fallback_attempted = true
       end
 
-      raise NotBoundError, missing_repository_message(role, environment, fallback_attempted: fallback_attempted) unless value
+      raise NotBoundError, missing_repository_message(role, environment, fallback_attempted:) unless value
 
       build_repository(value, role:, environment:)
     end
