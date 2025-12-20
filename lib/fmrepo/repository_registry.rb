@@ -63,7 +63,15 @@ module FMRepo
     def build_from_config(role:, environment:)
       env_map = @config.repositories[role]
       value = env_map && env_map[environment]
-      raise NotBoundError, missing_repository_message(role, environment) unless value
+
+      # Fall back to 'development' environment if value is nil and environment is different
+      fallback_attempted = false
+      if value.nil? && environment != 'development'
+        value = env_map && env_map['development']
+        fallback_attempted = true
+      end
+
+      raise NotBoundError, missing_repository_message(role, environment, fallback_attempted:) unless value
 
       build_repository(value, role:, environment:)
     end
@@ -90,8 +98,11 @@ module FMRepo
       value.to_s == '<tmp>'
     end
 
-    def missing_repository_message(role, environment)
-      "No repository configured for role #{role.inspect} in environment #{environment.inspect}"
+    def missing_repository_message(role, environment, fallback_attempted: false)
+      base = "No repository configured for role #{role.inspect} in environment #{environment.inspect}"
+      return base unless fallback_attempted
+
+      "#{base} (fallback to 'development' environment also failed)"
     end
 
     class OverrideGuard

@@ -70,4 +70,83 @@ class EnvironmentRepositoryTest < Minitest::Test
 
     assert_match(/No repository configured for role :default in environment "unconfigured-env"/, error.message)
   end
+
+  def test_environment_falls_back_to_development_when_value_is_nil
+    dev_dir = Dir.mktmpdir
+    FMRepo.reset_configuration!
+    EnvModel.instance_variable_set(:@repository, nil)
+    EnvModel.remove_instance_variable(:@repo_config) if EnvModel.instance_variable_defined?(:@repo_config)
+
+    FMRepo.configure do |c|
+      c.repositories = {
+        default: { 'development' => dev_dir, 'test' => nil }
+      }
+    end
+
+    FMRepo.environment = 'test'
+    EnvModel.create!({ 'title' => 'Fallback' }, body: 'Body')
+    assert File.exist?(File.join(dev_dir, '_items', 'fallback.md'))
+  ensure
+    FileUtils.rm_rf(dev_dir) if dev_dir
+  end
+
+  def test_environment_falls_back_to_development_from_yaml_config
+    Dir.mktmpdir do |tmpdir|
+      Dir.chdir(tmpdir) do
+        File.write('.fmrepo.yml', <<~YAML)
+          default:
+            development: "#{tmpdir}"
+            test: ~
+        YAML
+
+        FMRepo.reset_configuration!
+        FMRepo.environment = 'test'
+        EnvModel.instance_variable_set(:@repository, nil)
+        EnvModel.remove_instance_variable(:@repo_config) if EnvModel.instance_variable_defined?(:@repo_config)
+
+        EnvModel.create!({ 'title' => 'YamlFallback' }, body: 'Body')
+        assert File.exist?(File.join(tmpdir, '_items', 'yamlfallback.md'))
+      end
+    end
+  end
+
+  def test_development_environment_with_nil_value_raises_error
+    FMRepo.reset_configuration!
+    EnvModel.instance_variable_set(:@repository, nil)
+    EnvModel.remove_instance_variable(:@repo_config) if EnvModel.instance_variable_defined?(:@repo_config)
+
+    FMRepo.configure do |c|
+      c.repositories = {
+        default: { 'development' => nil }
+      }
+    end
+
+    FMRepo.environment = 'development'
+    error = assert_raises(FMRepo::NotBoundError) do
+      EnvModel.create!({ 'title' => 'Test' }, body: 'Body')
+    end
+
+    assert_match(/No repository configured for role :default in environment "development"/, error.message)
+    refute_match(/fallback/, error.message)
+  end
+
+  def test_fallback_failure_includes_helpful_error_message
+    FMRepo.reset_configuration!
+    EnvModel.instance_variable_set(:@repository, nil)
+    EnvModel.remove_instance_variable(:@repo_config) if EnvModel.instance_variable_defined?(:@repo_config)
+
+    FMRepo.configure do |c|
+      c.repositories = {
+        default: { 'development' => nil, 'test' => nil }
+      }
+    end
+
+    FMRepo.environment = 'test'
+    error = assert_raises(FMRepo::NotBoundError) do
+      EnvModel.create!({ 'title' => 'Test' }, body: 'Body')
+    end
+
+    assert_match(/No repository configured for role :default in environment "test"/, error.message)
+    assert_match(/fallback to 'development' environment also failed/, error.message)
+  end
 end
