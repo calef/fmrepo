@@ -81,6 +81,7 @@ module FMRepo
 
   def self.slugify(str)
     s = str.to_s.strip.downcase
+    s = s.gsub(/\s*&\s*/, ' and ')
     s = s.gsub(/['"]/, '')
     s = s.gsub(/[^a-z0-9]+/, '-')
     # Remove leading/trailing dashes by chomping instead of regex
