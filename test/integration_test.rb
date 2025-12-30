@@ -264,6 +264,8 @@ class IntegrationTest < Minitest::Test
     assert_equal 'untitled', FMRepo.slugify('')
     assert_equal 'untitled', FMRepo.slugify('   ')
     assert_equal 'rock-and-roll', FMRepo.slugify('Rock & Roll')
+    assert_equal 'a-and-b', FMRepo.slugify('A&B')
+    assert_equal 'a-and-b-and-c', FMRepo.slugify('A & B & C')
     assert_equal 'tests', FMRepo.slugify("test's")
   end
 
