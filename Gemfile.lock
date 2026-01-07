@@ -7,7 +7,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.3)
-    docile (1.4.0)
+    docile (1.4.1)
     json (2.18.0)
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
@@ -35,15 +35,15 @@ GEM
       rubocop-ast (>= 1.48.0, < 2.0)
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 2.4.0, < 4.0)
-    rubocop-ast (1.48.0)
+    rubocop-ast (1.49.0)
       parser (>= 3.3.7.2)
-      prism (~> 1.4)
+      prism (~> 1.7)
     ruby-progressbar (1.13.0)
     simplecov (0.22.0)
       docile (~> 1.1)
       simplecov-html (~> 0.11)
       simplecov_json_formatter (~> 0.1)
-    simplecov-html (0.12.3)
+    simplecov-html (0.13.2)
     simplecov_json_formatter (0.1.4)
     unicode-display_width (3.2.0)
       unicode-emoji (~> 4.1)
@@ -64,4 +64,4 @@ DEPENDENCIES
   simplecov (~> 0.22)
 
 BUNDLED WITH
-  4.0.2
+  4.0.3
