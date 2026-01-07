@@ -38,7 +38,7 @@ module FMRepo
       # Creates:
       # - front matter attribute: author_id
       # - instance method: author (lazy loads the Author record)
-      # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
       def belongs_to(name)
         foreign_key = "#{name}_id"
         association_class_name = name.to_s.split('_').map(&:capitalize).join
@@ -57,7 +57,10 @@ module FMRepo
             Object.const_get(association_class_name)
           rescue NameError
             # Try within the same namespace as the current class
-            self.class.name.split('::')[0..-2].reduce(Object) do |mod, const_name|
+            namespace_parts = self.class.name.split('::')[0..-2]
+            raise if namespace_parts.empty?
+
+            namespace_parts.reduce(Object) do |mod, const_name|
               mod.const_get(const_name)
             end.const_get(association_class_name)
           end
@@ -66,7 +69,7 @@ module FMRepo
           result = klass.find(fk_value)
           instance_variable_set(ivar, result)
           result
-        rescue FMRepo::NotFound
+        rescue FMRepo::NotFound, NameError
           nil
         end
 
@@ -81,7 +84,7 @@ module FMRepo
           end
         end
       end
-      # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
 
       # has_many association
       # Example: has_many :posts
@@ -104,7 +107,12 @@ module FMRepo
             Object.const_get(association_class_name)
           rescue NameError
             # Try within the same namespace as the current class
-            self.class.name.split('::')[0..-2].reduce(Object) do |mod, const_name|
+            namespace_parts = self.class.name.split('::')[0..-2]
+            raise NameError, "Uninitialized constant #{association_class_name}" if namespace_parts.empty?
+
+            # Top-level class, already tried global scope
+
+            namespace_parts.reduce(Object) do |mod, const_name|
               mod.const_get(const_name)
             end.const_get(association_class_name)
           end
