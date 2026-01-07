@@ -110,8 +110,6 @@ module FMRepo
             namespace_parts = self.class.name.split('::')[0..-2]
             raise NameError, "Uninitialized constant #{association_class_name}" if namespace_parts.empty?
 
-            # Top-level class, already tried global scope
-
             namespace_parts.reduce(Object) do |mod, const_name|
               mod.const_get(const_name)
             end.const_get(association_class_name)
