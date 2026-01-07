@@ -235,7 +235,7 @@ class AssociationsTest < Minitest::Test
     assert_equal 'Nested Author', loaded_comment.post.author['name']
   end
 
-  def test_has_many_returns_empty_array_when_record_not_persisted
+  def test_has_many_returns_empty_relation_when_record_not_persisted
     Author.repository(@repo)
     Post.repository(@repo)
 
@@ -243,7 +243,11 @@ class AssociationsTest < Minitest::Test
     author = Author.new({ 'name' => 'Unsaved Author' })
 
     posts = author.posts
-    assert_equal [], posts
+    # Should return a relation (chainable), not an array
+    assert_instance_of FMRepo::Relation, posts
+    assert_equal 0, posts.to_a.length
+    # Verify it's chainable
+    assert_equal 0, posts.order('title', :asc).to_a.length
   end
 
   def test_belongs_to_with_namespaced_models

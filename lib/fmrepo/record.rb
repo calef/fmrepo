@@ -87,6 +87,8 @@ module FMRepo
       # Example: has_many :posts
       # Creates:
       # - instance method: posts (returns relation of Post records where post.{model}_id == self.id)
+      # Note: Uses simple pluralization (strips trailing 's'). Irregular plurals like 'categories' must be
+      # defined as singular in the model name (e.g., has_many :categories expects a Category class).
       # rubocop:disable Naming/PredicatePrefix
       def has_many(name)
         singular = name.to_s.sub(/s$/, '')
@@ -96,8 +98,6 @@ module FMRepo
           # Return cached association if available
           ivar = :"@_association_#{name}"
           return instance_variable_get(ivar) if instance_variable_defined?(ivar)
-
-          return [] unless id
 
           # Resolve the association class
           klass = begin
@@ -114,7 +114,12 @@ module FMRepo
           foreign_key = "#{this_model_name}_id"
 
           # Query for records with matching foreign key
-          result = klass.where(foreign_key => id)
+          # For unpersisted records, return an empty relation that still supports chaining
+          result = if id
+                     klass.where(foreign_key => id)
+                   else
+                     klass.where(foreign_key => nil).limit(0)
+                   end
           instance_variable_set(ivar, result)
           result
         end
