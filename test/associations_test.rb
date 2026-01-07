@@ -97,6 +97,7 @@ class AssociationsTest < Minitest::Test
   end
 
   def test_belongs_to_returns_nil_when_associated_record_not_found
+    Author.repository(@repo)
     Post.repository(@repo)
 
     # Create a post with invalid author_id

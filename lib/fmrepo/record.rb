@@ -108,7 +108,7 @@ module FMRepo
           rescue NameError
             # Try within the same namespace as the current class
             namespace_parts = self.class.name.split('::')[0..-2]
-            raise NameError, "Uninitialized constant #{association_class_name}" if namespace_parts.empty?
+            raise if namespace_parts.empty?
 
             namespace_parts.reduce(Object) do |mod, const_name|
               mod.const_get(const_name)
