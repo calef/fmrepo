@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `belongs_to` now creates `{name}_id` and `{name}_id=` methods for direct foreign key access.
+  - Setting `{name}_id=` clears the cached association so the new associated record is loaded on next access.
+
 ## [0.2.7] - 2026-01-08
 
 ### Added

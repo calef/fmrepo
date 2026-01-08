@@ -38,10 +38,24 @@ module FMRepo
       # Creates:
       # - front matter attribute: author_id
       # - instance method: author (lazy loads the Author record)
+      # - instance method: author_id (getter for foreign key)
+      # - instance method: author_id= (setter for foreign key)
       # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
       def belongs_to(name)
         foreign_key = "#{name}_id"
         association_class_name = name.to_s.split('_').map(&:capitalize).join
+
+        # Define foreign_key getter method
+        define_method(foreign_key) do
+          self[foreign_key]
+        end
+
+        # Define foreign_key setter method
+        define_method("#{foreign_key}=") do |value|
+          self[foreign_key] = value
+          # Clear cached association when foreign key is changed
+          remove_instance_variable(:"@_association_#{name}") if instance_variable_defined?(:"@_association_#{name}")
+        end
 
         define_method(name) do
           # Return cached association if available
@@ -92,7 +106,7 @@ module FMRepo
       # - instance method: posts (returns relation of Post records where post.{model}_id == self.id)
       # Note: Uses simple pluralization (strips trailing 's'). Irregular plurals like 'categories' must be
       # defined as singular in the model name (e.g., has_many :categories expects a Category class).
-      # rubocop:disable Naming/PredicateName
+      # rubocop:disable Naming/PredicatePrefix
       def has_many(name)
         singular = name.to_s.sub(/s$/, '')
         association_class_name = singular.split('_').map(&:capitalize).join
@@ -130,7 +144,7 @@ module FMRepo
           result
         end
       end
-      # rubocop:enable Naming/PredicateName
+      # rubocop:enable Naming/PredicatePrefix
 
       # Repository configuration
       # Accepts either a path string or a Repository instance

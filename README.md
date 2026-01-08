@@ -306,6 +306,13 @@ post = Post.new({ "title" => "My First Post" })
 post.author = author  # Sets author_id automatically
 post.save!
 
+# Or set the foreign key directly
+post.author_id = author.id  # Direct access to the foreign key
+post.save!
+
+# Access the foreign key value
+puts post.author_id  # => "_authors/alice-smith.md"
+
 # Load a post and access its author (lazy-loaded)
 loaded_post = Post.find("_posts/my-first-post.md")
 puts loaded_post.author["name"]  # => "Alice Smith"
@@ -319,10 +326,12 @@ author1.object_id == author2.object_id  # => true
 **Key Features:**
 
 - Stores foreign key as `{name}_id` in front matter (e.g., `author_id`)
+- Creates `{name}_id` and `{name}_id=` methods for direct foreign key access
 - Lazy-loads the associated record on first access
 - Caches the loaded record for performance
 - Returns `nil` if the foreign key is not set or the record doesn't exist
 - Provides setter method to update both association and foreign key
+- Setting `{name}_id=` directly clears the cached association
 
 ### has_many
 
