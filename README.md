@@ -8,6 +8,7 @@ repositories. Perfect for Jekyll-style collections and custom static site genera
 ## Features
 
 - **Active Record-style API**: Familiar `where`, `order`, `limit`, `find`, `create!` methods
+- **Associations**: Define `belongs_to` and `has_many` relationships via front matter foreign keys
 - **Chainable queries**: Build complex queries with immutable relation objects
 - **Type-per-directory**: Define one model class per collection/directory
 - **Custom naming rules**: Control file naming and collision resolution
@@ -83,7 +84,7 @@ While FMRepo provides an Active Record-like interface, there are key differences
 | **Model Configuration** | Database connection configured globally | Repository path configured per model class |
 | **Record Identity** | Primary key (usually `id` column) | File path relative to repository root |
 | **Schema** | Defined in migrations | Flexible YAML front matter (no schema) |
-| **Relationships** | Associations (has_many, belongs_to) | Not supported (v1) |
+| **Relationships** | Associations (has_many, belongs_to) | `belongs_to` and `has_many` via front matter foreign keys |
 | **Transactions** | Database transactions | Not supported (file-per-record) |
 | **Callbacks** | Before/after hooks | Not supported (v1) |
 | **Validations** | Built-in validation framework | Not supported (v1) |
@@ -260,6 +261,169 @@ Place.where("_mtime" => FMRepo.gt(Time.now - 3600))
      .order("_id")
      .to_a
 ```
+
+## Associations
+
+FMRepo supports `belongs_to` and `has_many` associations for defining relationships between models using front matter foreign keys.
+
+### belongs_to
+
+Define a `belongs_to` association to create a foreign key and lazy-loading accessor:
+
+```ruby
+class Post < FMRepo::Record
+  repository "/path/to/site"
+  scope glob: "_posts/**/*.md"
+  
+  belongs_to :author  # Creates author_id foreign key and author accessor
+  
+  naming do |front_matter:, **|
+    "_posts/#{FMRepo.slugify(front_matter['title'])}.md"
+  end
+end
+
+class Author < FMRepo::Record
+  repository "/path/to/site"
+  scope glob: "_authors/**/*.md"
+  
+  naming do |front_matter:, **|
+    "_authors/#{FMRepo.slugify(front_matter['name'])}.md"
+  end
+end
+```
+
+Usage:
+
+```ruby
+# Create an author
+author = Author.create!(
+  { "name" => "Alice Smith" },
+  body: "Author bio..."
+)
+
+# Create a post and associate it with the author
+post = Post.new({ "title" => "My First Post" })
+post.author = author  # Sets author_id automatically
+post.save!
+
+# Load a post and access its author (lazy-loaded)
+loaded_post = Post.find("_posts/my-first-post.md")
+puts loaded_post.author["name"]  # => "Alice Smith"
+
+# The association is cached after first access
+author1 = loaded_post.author
+author2 = loaded_post.author
+author1.object_id == author2.object_id  # => true
+```
+
+**Key Features:**
+
+- Stores foreign key as `{name}_id` in front matter (e.g., `author_id`)
+- Lazy-loads the associated record on first access
+- Caches the loaded record for performance
+- Returns `nil` if the foreign key is not set or the record doesn't exist
+- Provides setter method to update both association and foreign key
+
+### has_many
+
+Define a `has_many` association to retrieve all records that reference the current record:
+
+```ruby
+class Author < FMRepo::Record
+  repository "/path/to/site"
+  scope glob: "_authors/**/*.md"
+  
+  has_many :posts  # Returns posts where post.author_id == self.id
+  
+  naming do |front_matter:, **|
+    "_authors/#{FMRepo.slugify(front_matter['name'])}.md"
+  end
+end
+
+class Post < FMRepo::Record
+  repository "/path/to/site"
+  scope glob: "_posts/**/*.md"
+  
+  belongs_to :author
+  has_many :comments
+  
+  naming do |front_matter:, **|
+    "_posts/#{FMRepo.slugify(front_matter['title'])}.md"
+  end
+end
+
+class Comment < FMRepo::Record
+  repository "/path/to/site"
+  scope glob: "_comments/**/*.md"
+  
+  belongs_to :post
+  
+  naming do |front_matter:, **|
+    "_comments/comment-#{SecureRandom.hex(4)}.md"
+  end
+end
+```
+
+Usage:
+
+```ruby
+# Get all posts for an author
+author = Author.find("_authors/alice-smith.md")
+posts = author.posts.to_a
+puts "#{author['name']} has #{posts.length} posts"
+
+# Chain queries on the association
+recent_posts = author.posts
+                     .where("published" => true)
+                     .order("date", :desc)
+                     .limit(5)
+                     .to_a
+
+# Navigate nested associations
+post = Post.find("_posts/my-first-post.md")
+comments = post.comments.to_a
+comment_authors = comments.map { |c| c.post.author["name"] }.uniq
+```
+
+**Key Features:**
+
+- Returns a chainable `Relation` object (not an array)
+- Filters by `{model_name}_id` foreign key (e.g., `author_id` for Author model)
+- Supports all relation methods (`where`, `order`, `limit`, etc.)
+- Returns an empty relation for unpersisted records (maintains chainability)
+- Uses simple pluralization (strips trailing 's' from association name)
+- Caches the relation for performance
+
+**Pluralization Note:** The association uses simple pluralization by stripping the trailing 's'. For irregular plurals
+like "categories", the model should be named using the singular form (e.g., `has_many :categories` expects a `Category` class).
+
+### Nested Associations
+
+You can navigate through multiple associations:
+
+```ruby
+# From a comment, access the post's author
+comment = Comment.find("_comments/comment-abc123.md")
+author_name = comment.post.author["name"]
+
+# Get all comments for all posts by an author
+author = Author.find("_authors/alice-smith.md")
+all_comments = author.posts.flat_map { |post| post.comments.to_a }
+```
+
+### Association Resolution
+
+Associations automatically resolve class names from the association name:
+
+- `belongs_to :author` looks for an `Author` class
+- `has_many :blog_posts` looks for a `BlogPost` class
+
+The resolution tries:
+
+1. Global scope first (e.g., `Object.const_get("Author")`)
+2. Local namespace if the model is namespaced (e.g., `MyApp::Author` for a model in `MyApp`)
+
+If the associated class cannot be found, a `NameError` is raised.
 
 ## Advanced Usage
 

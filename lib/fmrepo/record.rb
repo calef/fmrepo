@@ -33,6 +33,105 @@ module FMRepo
         end
       end
 
+      # belongs_to association
+      # Example: belongs_to :author
+      # Creates:
+      # - front matter attribute: author_id
+      # - instance method: author (lazy loads the Author record)
+      # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
+      def belongs_to(name)
+        foreign_key = "#{name}_id"
+        association_class_name = name.to_s.split('_').map(&:capitalize).join
+
+        define_method(name) do
+          # Return cached association if available
+          ivar = :"@_association_#{name}"
+          return instance_variable_get(ivar) if instance_variable_defined?(ivar)
+
+          # Get the foreign key value
+          fk_value = self[foreign_key]
+          return nil unless fk_value
+
+          # Resolve the association class
+          klass = begin
+            Object.const_get(association_class_name)
+          rescue NameError
+            # Try within the same namespace as the current class
+            namespace_parts = self.class.name.split('::')[0..-2]
+            raise if namespace_parts.empty?
+
+            namespace_parts.reduce(Object) do |mod, const_name|
+              mod.const_get(const_name)
+            end.const_get(association_class_name)
+          end
+
+          # Load and cache the associated record
+          result = klass.find(fk_value)
+          instance_variable_set(ivar, result)
+          result
+        rescue FMRepo::NotFound, NameError
+          nil
+        end
+
+        # Define setter method
+        define_method("#{name}=") do |record|
+          if record.nil?
+            self[foreign_key] = nil
+            instance_variable_set(:"@_association_#{name}", nil)
+          else
+            self[foreign_key] = record.id
+            instance_variable_set(:"@_association_#{name}", record)
+          end
+        end
+      end
+      # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
+
+      # has_many association
+      # Example: has_many :posts
+      # Creates:
+      # - instance method: posts (returns relation of Post records where post.{model}_id == self.id)
+      # Note: Uses simple pluralization (strips trailing 's'). Irregular plurals like 'categories' must be
+      # defined as singular in the model name (e.g., has_many :categories expects a Category class).
+      # rubocop:disable Naming/PredicateName
+      def has_many(name)
+        singular = name.to_s.sub(/s$/, '')
+        association_class_name = singular.split('_').map(&:capitalize).join
+
+        define_method(name) do
+          # Return cached association if available
+          ivar = :"@_association_#{name}"
+          return instance_variable_get(ivar) if instance_variable_defined?(ivar)
+
+          # Resolve the association class
+          klass = begin
+            Object.const_get(association_class_name)
+          rescue NameError
+            # Try within the same namespace as the current class
+            namespace_parts = self.class.name.split('::')[0..-2]
+            raise if namespace_parts.empty?
+
+            namespace_parts.reduce(Object) do |mod, const_name|
+              mod.const_get(const_name)
+            end.const_get(association_class_name)
+          end
+
+          # Calculate the foreign key name based on this model's name
+          this_model_name = self.class.name.split('::').last.downcase
+          foreign_key = "#{this_model_name}_id"
+
+          # Query for records with matching foreign key
+          # For unpersisted records, return an empty relation that still supports chaining
+          result = if id
+                     klass.where(foreign_key => id)
+                   else
+                     klass.where(foreign_key => nil).limit(0)
+                   end
+          instance_variable_set(ivar, result)
+          result
+        end
+      end
+      # rubocop:enable Naming/PredicateName
+
       # Repository configuration
       # Accepts either a path string or a Repository instance
       def repository(path_or_repo = nil)

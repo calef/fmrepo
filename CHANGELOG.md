@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.7] - 2026-01-08
+
+### Added
+
+- `belongs_to` association DSL for defining model relationships via front matter foreign keys.
+  - Stores foreign key as `{name}_id` in front matter.
+  - Lazy-loads associated record with caching.
+  - Provides setter method to update both association and foreign key.
+  - Returns `nil` for missing records.
+- `has_many` association DSL for defining one-to-many relationships.
+  - Returns chainable `Relation` filtered by `{model_name}_id` foreign key.
+  - Simple pluralization (strips trailing 's').
+  - Returns empty chainable `Relation` for unpersisted records.
+- Namespace-aware association resolution (tries global scope, then local namespace).
+
 ## [0.2.6] - 2026-01-06
 
 ### Changed
@@ -86,6 +101,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite (56 tests)
 - Documentation and examples
 
+[0.2.7]: https://github.com/calef/fmrepo/releases/tag/v0.2.7
+[0.2.6]: https://github.com/calef/fmrepo/releases/tag/v0.2.6
 [0.2.5]: https://github.com/calef/fmrepo/releases/tag/v0.2.5
 [0.2.4]: https://github.com/calef/fmrepo/releases/tag/v0.2.4
 [0.2.3]: https://github.com/calef/fmrepo/releases/tag/v0.2.3
