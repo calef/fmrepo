@@ -317,6 +317,7 @@ author1.object_id == author2.object_id  # => true
 ```
 
 **Key Features:**
+
 - Stores foreign key as `{name}_id` in front matter (e.g., `author_id`)
 - Lazy-loads the associated record on first access
 - Caches the loaded record for performance
@@ -385,6 +386,7 @@ comment_authors = comments.map { |c| c.post.author["name"] }.uniq
 ```
 
 **Key Features:**
+
 - Returns a chainable `Relation` object (not an array)
 - Filters by `{model_name}_id` foreign key (e.g., `author_id` for Author model)
 - Supports all relation methods (`where`, `order`, `limit`, etc.)
@@ -392,7 +394,8 @@ comment_authors = comments.map { |c| c.post.author["name"] }.uniq
 - Uses simple pluralization (strips trailing 's' from association name)
 - Caches the relation for performance
 
-**Pluralization Note:** The association uses simple pluralization by stripping the trailing 's'. For irregular plurals like "categories", the model should be named using the singular form (e.g., `has_many :categories` expects a `Category` class).
+**Pluralization Note:** The association uses simple pluralization by stripping the trailing 's'. For irregular plurals 
+like "categories", the model should be named using the singular form (e.g., `has_many :categories` expects a `Category` class).
 
 ### Nested Associations
 
@@ -411,10 +414,12 @@ all_comments = author.posts.flat_map { |post| post.comments.to_a }
 ### Association Resolution
 
 Associations automatically resolve class names from the association name:
+
 - `belongs_to :author` looks for an `Author` class
 - `has_many :blog_posts` looks for a `BlogPost` class
 
 The resolution tries:
+
 1. Global scope first (e.g., `Object.const_get("Author")`)
 2. Local namespace if the model is namespaced (e.g., `MyApp::Author` for a model in `MyApp`)
 
