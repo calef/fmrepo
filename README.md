@@ -394,7 +394,7 @@ comment_authors = comments.map { |c| c.post.author["name"] }.uniq
 - Uses simple pluralization (strips trailing 's' from association name)
 - Caches the relation for performance
 
-**Pluralization Note:** The association uses simple pluralization by stripping the trailing 's'. For irregular plurals 
+**Pluralization Note:** The association uses simple pluralization by stripping the trailing 's'. For irregular plurals
 like "categories", the model should be named using the singular form (e.g., `has_many :categories` expects a `Category` class).
 
 ### Nested Associations
