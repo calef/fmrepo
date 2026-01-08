@@ -15,7 +15,7 @@ Gem::Specification.new do |spec|
   DESCRIPTION
   spec.homepage = 'https://github.com/calef/fmrepo'
   spec.license = 'MIT'
-  spec.required_ruby_version = '>= 3.4.1'
+  spec.required_ruby_version = '>= 3.4.7'
 
   spec.metadata['homepage_uri'] = spec.homepage
   spec.metadata['source_code_uri'] = 'https://github.com/calef/fmrepo'
