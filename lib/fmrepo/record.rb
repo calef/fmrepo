@@ -38,10 +38,24 @@ module FMRepo
       # Creates:
       # - front matter attribute: author_id
       # - instance method: author (lazy loads the Author record)
+      # - instance method: author_id (getter for foreign key)
+      # - instance method: author_id= (setter for foreign key)
       # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
       def belongs_to(name)
         foreign_key = "#{name}_id"
         association_class_name = name.to_s.split('_').map(&:capitalize).join
+
+        # Define foreign_key getter method
+        define_method(foreign_key) do
+          self[foreign_key]
+        end
+
+        # Define foreign_key setter method
+        define_method("#{foreign_key}=") do |value|
+          self[foreign_key] = value
+          # Clear cached association when foreign key is changed
+          remove_instance_variable(:"@_association_#{name}") if instance_variable_defined?(:"@_association_#{name}")
+        end
 
         define_method(name) do
           # Return cached association if available

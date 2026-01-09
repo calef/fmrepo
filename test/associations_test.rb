@@ -71,6 +71,60 @@ class AssociationsTest < Minitest::Test
     assert_respond_to post, :author=
   end
 
+  def test_belongs_to_creates_foreign_key_getter_method
+    Post.repository(@repo)
+    post = Post.new({ 'title' => 'Test Post' })
+
+    assert_respond_to post, :author_id
+  end
+
+  def test_belongs_to_creates_foreign_key_setter_method
+    Post.repository(@repo)
+    post = Post.new({ 'title' => 'Test Post' })
+
+    assert_respond_to post, :author_id=
+  end
+
+  def test_belongs_to_foreign_key_getter_returns_value
+    Post.repository(@repo)
+    post = Post.new({ 'title' => 'Test Post', 'author_id' => '_authors/john.md' })
+
+    assert_equal '_authors/john.md', post.author_id
+  end
+
+  def test_belongs_to_foreign_key_setter_updates_value
+    Post.repository(@repo)
+    post = Post.new({ 'title' => 'Test Post' })
+
+    post.author_id = '_authors/jane.md'
+    assert_equal '_authors/jane.md', post.author_id
+    assert_equal '_authors/jane.md', post['author_id']
+  end
+
+  def test_belongs_to_foreign_key_setter_clears_cached_association
+    Author.repository(@repo)
+    Post.repository(@repo)
+
+    author1 = Author.create!({ 'slug' => 'author1', 'name' => 'Author 1' }, body: 'Bio 1')
+    author2 = Author.create!({ 'slug' => 'author2', 'name' => 'Author 2' }, body: 'Bio 2')
+    post = Post.create!({ 'slug' => 'test-post', 'title' => 'Test Post', 'author_id' => author1.id }, body: 'Content')
+
+    loaded_post = Post.find(post.id)
+    # Load and cache the first author
+    first_author = loaded_post.author
+    assert_equal 'Author 1', first_author['name']
+
+    # Change foreign key directly - should clear the cache
+    loaded_post.author_id = author2.id
+
+    # Should load the new author, not return the cached one
+    second_author = loaded_post.author
+    assert_equal 'Author 2', second_author['name']
+
+    # Verify they are different objects
+    refute_same first_author, second_author
+  end
+
   def test_belongs_to_returns_nil_when_foreign_key_not_set
     Post.repository(@repo)
     post = Post.new({ 'title' => 'Test Post' })
