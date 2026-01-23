@@ -28,8 +28,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BRANCH: main
           VALIDATE_ALL_CODEBASE: false
-          # Ruby linting handled by rake test (includes rubocop)
-          VALIDATE_RUBY: false
+          # Only validate these (Ruby linting handled by rake test)
           VALIDATE_MARKDOWN: true
           VALIDATE_YAML: true
           VALIDATE_JSON: true
