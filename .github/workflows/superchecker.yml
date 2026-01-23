@@ -28,11 +28,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BRANCH: main
           VALIDATE_ALL_CODEBASE: false
-          # Ruby validation enabled for future Ruby gem development (see issue #1)
-          VALIDATE_RUBY: true
+          # Ruby linting handled by rake test (includes rubocop)
+          VALIDATE_RUBY: false
           VALIDATE_MARKDOWN: true
           VALIDATE_YAML: true
           VALIDATE_JSON: true
-          # Use repository's RuboCop configuration
-          RUBY_CONFIG_FILE: .rubocop.yml
-          LINTER_RULES_PATH: .
