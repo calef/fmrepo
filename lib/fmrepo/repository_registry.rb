@@ -64,12 +64,11 @@ module FMRepo
       value = resolve_config_value(role:, environment:)
 
       unless value
-        if environment == 'test'
-          # Convention: test environment always gets auto temp dir
-          value = '<tmp>'
-        else
-          raise NotBoundError, missing_repository_message(role, environment)
-        end
+        raise NotBoundError, missing_repository_message(role, environment) unless environment == 'test'
+
+        # Convention: test environment always gets auto temp dir
+        value = '<tmp>'
+
       end
 
       build_repository(value, role:, environment:)
@@ -81,9 +80,9 @@ module FMRepo
       return value if value
 
       # Fall back to :default role if different
-      if role != :default
-        lookup_with_env_fallback(:default, environment)
-      end
+      return unless role != :default
+
+      lookup_with_env_fallback(:default, environment)
     end
 
     def lookup_with_env_fallback(role, environment)
@@ -94,9 +93,9 @@ module FMRepo
       return value if value
 
       # Fall back to 'development' if different environment (except test)
-      if environment != 'development' && environment != 'test'
-        env_map['development']
-      end
+      return unless environment != 'development' && environment != 'test'
+
+      env_map['development']
     end
 
     def build_repository(value, role:, environment:)
