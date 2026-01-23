@@ -61,19 +61,42 @@ module FMRepo
     private
 
     def build_from_config(role:, environment:)
-      env_map = @config.repositories[role]
-      value = env_map && env_map[environment]
+      value = resolve_config_value(role:, environment:)
 
-      # Fall back to 'development' environment if value is nil and environment is different
-      fallback_attempted = false
-      if value.nil? && environment != 'development'
-        value = env_map && env_map['development']
-        fallback_attempted = true
+      unless value
+        if environment == 'test'
+          # Convention: test environment always gets auto temp dir
+          value = '<tmp>'
+        else
+          raise NotBoundError, missing_repository_message(role, environment)
+        end
       end
 
-      raise NotBoundError, missing_repository_message(role, environment, fallback_attempted:) unless value
-
       build_repository(value, role:, environment:)
+    end
+
+    def resolve_config_value(role:, environment:)
+      # Try the requested role
+      value = lookup_with_env_fallback(role, environment)
+      return value if value
+
+      # Fall back to :default role if different
+      if role != :default
+        lookup_with_env_fallback(:default, environment)
+      end
+    end
+
+    def lookup_with_env_fallback(role, environment)
+      env_map = @config.repositories[role]
+      return nil unless env_map
+
+      value = env_map[environment]
+      return value if value
+
+      # Fall back to 'development' if different environment (except test)
+      if environment != 'development' && environment != 'test'
+        env_map['development']
+      end
     end
 
     def build_repository(value, role:, environment:)
@@ -98,11 +121,8 @@ module FMRepo
       value.to_s == '<tmp>'
     end
 
-    def missing_repository_message(role, environment, fallback_attempted: false)
-      base = "No repository configured for role #{role.inspect} in environment #{environment.inspect}"
-      return base unless fallback_attempted
-
-      "#{base} (fallback to 'development' environment also failed)"
+    def missing_repository_message(role, environment)
+      "No repository configured for role #{role.inspect} in environment #{environment.inspect}"
     end
 
     class OverrideGuard

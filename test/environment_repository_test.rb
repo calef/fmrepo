@@ -71,7 +71,7 @@ class EnvironmentRepositoryTest < Minitest::Test
     assert_match(/No repository configured for role :default in environment "unconfigured-env"/, error.message)
   end
 
-  def test_environment_falls_back_to_development_when_value_is_nil
+  def test_non_test_environment_falls_back_to_development_when_value_is_nil
     dev_dir = Dir.mktmpdir
     FMRepo.reset_configuration!
     EnvModel.instance_variable_set(:@repository, nil)
@@ -79,28 +79,28 @@ class EnvironmentRepositoryTest < Minitest::Test
 
     FMRepo.configure do |c|
       c.repositories = {
-        default: { 'development' => dev_dir, 'test' => nil }
+        default: { 'development' => dev_dir, 'staging' => nil }
       }
     end
 
-    FMRepo.environment = 'test'
+    FMRepo.environment = 'staging'
     EnvModel.create!({ 'title' => 'Fallback' }, body: 'Body')
     assert File.exist?(File.join(dev_dir, '_items', 'fallback.md'))
   ensure
     FileUtils.rm_rf(dev_dir) if dev_dir
   end
 
-  def test_environment_falls_back_to_development_from_yaml_config
+  def test_non_test_environment_falls_back_to_development_from_yaml_config
     Dir.mktmpdir do |tmpdir|
       Dir.chdir(tmpdir) do
         File.write('.fmrepo.yml', <<~YAML)
           default:
             development: "#{tmpdir}"
-            test: ~
+            staging: ~
         YAML
 
         FMRepo.reset_configuration!
-        FMRepo.environment = 'test'
+        FMRepo.environment = 'staging'
         EnvModel.instance_variable_set(:@repository, nil)
         EnvModel.remove_instance_variable(:@repo_config) if EnvModel.instance_variable_defined?(:@repo_config)
 
@@ -130,23 +130,71 @@ class EnvironmentRepositoryTest < Minitest::Test
     refute_match(/fallback/, error.message)
   end
 
-  def test_fallback_failure_includes_helpful_error_message
+  def test_test_environment_auto_uses_temp_dir_when_not_configured
+    FMRepo.reset_configuration!
+    EnvModel.instance_variable_set(:@repository, nil)
+    EnvModel.remove_instance_variable(:@repo_config) if EnvModel.instance_variable_defined?(:@repo_config)
+
+    # No configuration at all
+    FMRepo.environment = 'test'
+    EnvModel.create!({ 'title' => 'AutoTemp' }, body: 'Body')
+
+    # Should have created in a temp directory
+    repo = FMRepo.repository_registry.fetch(role: :default, environment: 'test')
+    assert repo.root.to_s.start_with?(Dir.tmpdir), "Expected repo root to be in temp dir, got: #{repo.root}"
+  end
+
+  def test_test_environment_auto_temp_even_with_nil_config
     FMRepo.reset_configuration!
     EnvModel.instance_variable_set(:@repository, nil)
     EnvModel.remove_instance_variable(:@repo_config) if EnvModel.instance_variable_defined?(:@repo_config)
 
     FMRepo.configure do |c|
       c.repositories = {
-        default: { 'development' => nil, 'test' => nil }
+        default: { 'development' => '/some/path', 'test' => nil }
       }
     end
 
     FMRepo.environment = 'test'
-    error = assert_raises(FMRepo::NotBoundError) do
-      EnvModel.create!({ 'title' => 'Test' }, body: 'Body')
+    repo = FMRepo.repository_registry.fetch(role: :default, environment: 'test')
+    assert repo.root.to_s.start_with?(Dir.tmpdir), "Expected repo root to be in temp dir, got: #{repo.root}"
+  end
+
+  def test_custom_role_falls_back_to_default_config
+    dev_dir = Dir.mktmpdir
+    FMRepo.reset_configuration!
+
+    FMRepo.configure do |c|
+      c.repositories = {
+        default: { 'development' => dev_dir }
+      }
     end
 
-    assert_match(/No repository configured for role :default in environment "test"/, error.message)
-    assert_match(/fallback to 'development' environment also failed/, error.message)
+    FMRepo.environment = 'development'
+    # Fetch a role that doesn't exist - should fall back to :default
+    repo = FMRepo.repository_registry.fetch(role: :custom_role, environment: 'development')
+    assert_equal dev_dir, repo.root.to_s
+  ensure
+    FileUtils.rm_rf(dev_dir) if dev_dir
+  end
+
+  def test_custom_role_uses_explicit_config_over_default
+    dev_dir = Dir.mktmpdir
+    custom_dir = Dir.mktmpdir
+    FMRepo.reset_configuration!
+
+    FMRepo.configure do |c|
+      c.repositories = {
+        default: { 'development' => dev_dir },
+        custom_role: { 'development' => custom_dir }
+      }
+    end
+
+    FMRepo.environment = 'development'
+    repo = FMRepo.repository_registry.fetch(role: :custom_role, environment: 'development')
+    assert_equal custom_dir, repo.root.to_s
+  ensure
+    FileUtils.rm_rf(dev_dir) if dev_dir
+    FileUtils.rm_rf(custom_dir) if custom_dir
   end
 end
