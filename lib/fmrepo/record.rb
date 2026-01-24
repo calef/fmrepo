@@ -106,8 +106,7 @@ module FMRepo
       # - instance method: posts (returns relation of Post records where post.{model}_id == self.id)
       # Note: Uses simple pluralization (strips trailing 's'). Irregular plurals like 'categories' must be
       # defined as singular in the model name (e.g., has_many :categories expects a Category class).
-      # rubocop:disable Naming/PredicateName
-      def has_many(name)
+      def has_many(name) # rubocop:disable Naming/PredicatePrefix
         singular = name.to_s.sub(/s$/, '')
         association_class_name = singular.split('_').map(&:capitalize).join
 
@@ -144,7 +143,6 @@ module FMRepo
           result
         end
       end
-      # rubocop:enable Naming/PredicateName
 
       # Repository configuration
       # Accepts either a path string or a Repository instance
