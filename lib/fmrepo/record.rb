@@ -53,7 +53,24 @@ module FMRepo
           if default.nil?
             define_method(name) { self[key] }
           else
-            define_method(name) { self[key].nil? ? default : self[key] }
+            # When a default is provided and the value is nil, initialize the
+            # front matter with a dup of the default. This ensures:
+            # 1. Mutable defaults (arrays, hashes) aren't shared between instances
+            # 2. Modifications to the returned value persist in the record
+            define_method(name) do
+              value = self[key]
+              if value.nil?
+                default_value = begin
+                  default.dup
+                rescue TypeError
+                  default
+                end
+                self[key] = default_value
+                default_value
+              else
+                value
+              end
+            end
           end
 
           define_method(:"#{name}=") { |value| self[key] = value }

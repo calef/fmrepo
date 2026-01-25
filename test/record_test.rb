@@ -220,6 +220,19 @@ class RecordTest < Minitest::Test
     assert_equal [], rec.tags
   end
 
+  def test_attribute_with_mutable_default_does_not_share_between_instances
+    klass = Class.new(FMRepo::Record) do
+      attribute :tags, default: []
+    end
+
+    rec1 = klass.new
+    rec2 = klass.new
+
+    rec1.tags << 'ruby'
+    assert_equal ['ruby'], rec1.tags
+    assert_equal [], rec2.tags # Should not be affected by rec1's modification
+  end
+
   def test_boolean_attribute_creates_getter_setter_and_predicate
     klass = Class.new(FMRepo::Record) do
       boolean_attribute :locked
