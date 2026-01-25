@@ -163,4 +163,26 @@ class RecordTest < Minitest::Test
     assert_instance_of Pathname, rec.rel_path
     assert_equal 'test.md', rec.rel_path.to_s
   end
+
+  def test_scope_config_returns_hash_with_scope_settings
+    klass = Class.new(FMRepo::Record) do
+      scope glob: '_posts/**/*.md', exclude: ['drafts/**'], extensions: %w[.md .markdown]
+    end
+
+    config = klass.scope_config
+    assert_instance_of Hash, config
+    assert_equal '_posts/**/*.md', config[:glob]
+    assert_equal ['drafts/**'], config[:exclude]
+    assert_equal %w[.md .markdown], config[:extensions]
+  end
+
+  def test_scope_config_returns_defaults_when_scope_not_called
+    klass = Class.new(FMRepo::Record)
+
+    config = klass.scope_config
+    assert_instance_of Hash, config
+    assert_nil config[:glob]
+    assert_equal [], config[:exclude]
+    assert_nil config[:extensions]
+  end
 end

@@ -11,6 +11,29 @@ module FMRepo
         @config = config.with(glob:, exclude:, extensions:)
       end
 
+      # Returns scope configuration as a hash.
+      #
+      # This is the public API for accessing scope settings configured via the
+      # `scope` class method. Consumers should use this method rather than
+      # attempting to introspect private instance variables.
+      #
+      # @return [Hash] scope configuration with :glob, :exclude, and :extensions keys
+      #
+      # @example
+      #   class Post < FMRepo::Record
+      #     scope glob: '_posts/**/*.md'
+      #   end
+      #
+      #   Post.scope_config
+      #   # => { glob: '_posts/**/*.md', exclude: [], extensions: nil }
+      def scope_config
+        {
+          glob: config.glob,
+          exclude: config.exclude,
+          extensions: config.extensions
+        }
+      end
+
       def naming(&block)
         raise ArgumentError, 'naming requires a block' unless block
 
