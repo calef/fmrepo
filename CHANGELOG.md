@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.10] - 2026-01-24
+
+### Added
+
+- `Record.scope_config` class method providing a public API for accessing scope configuration.
+  - Returns a hash with `:glob`, `:exclude`, and `:extensions` keys.
+  - Consumers should use this method instead of introspecting private instance variables.
+
 ## [0.2.9] - 2026-01-22
 
 ### Added
@@ -120,6 +128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite (56 tests)
 - Documentation and examples
 
+[0.2.10]: https://github.com/calef/fmrepo/releases/tag/v0.2.10
 [0.2.9]: https://github.com/calef/fmrepo/releases/tag/v0.2.9
 [0.2.8]: https://github.com/calef/fmrepo/releases/tag/v0.2.8
 [0.2.7]: https://github.com/calef/fmrepo/releases/tag/v0.2.7
