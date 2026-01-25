@@ -185,4 +185,87 @@ class RecordTest < Minitest::Test
     assert_equal [], config[:exclude]
     assert_nil config[:extensions]
   end
+
+  def test_attribute_creates_getter_and_setter
+    klass = Class.new(FMRepo::Record) do
+      attribute :title, :date
+    end
+
+    rec = klass.new
+    assert_nil rec.title
+    rec.title = 'Test Title'
+    assert_equal 'Test Title', rec.title
+    assert_equal 'Test Title', rec['title']
+  end
+
+  def test_attribute_with_default_returns_default_when_nil
+    klass = Class.new(FMRepo::Record) do
+      attribute :tags, default: []
+    end
+
+    rec = klass.new
+    assert_equal [], rec.tags
+
+    rec.tags = %w[ruby rails]
+    assert_equal %w[ruby rails], rec.tags
+  end
+
+  def test_attribute_with_default_does_not_return_default_when_explicitly_set
+    klass = Class.new(FMRepo::Record) do
+      attribute :tags, default: ['default']
+    end
+
+    rec = klass.new
+    rec['tags'] = []
+    assert_equal [], rec.tags
+  end
+
+  def test_boolean_attribute_creates_getter_setter_and_predicate
+    klass = Class.new(FMRepo::Record) do
+      boolean_attribute :locked
+    end
+
+    rec = klass.new
+    assert_nil rec.locked
+    refute rec.locked?
+
+    rec.locked = true
+    assert rec.locked?
+
+    rec.locked = false
+    refute rec.locked?
+  end
+
+  def test_boolean_attribute_with_default_false_requires_explicit_true
+    klass = Class.new(FMRepo::Record) do
+      boolean_attribute :summarized
+    end
+
+    rec = klass.new
+    refute rec.summarized?
+
+    rec.summarized = 'yes'
+    refute rec.summarized?
+
+    rec.summarized = true
+    assert rec.summarized?
+  end
+
+  def test_boolean_attribute_with_default_true_returns_true_unless_false
+    klass = Class.new(FMRepo::Record) do
+      boolean_attribute :published, default: true
+    end
+
+    rec = klass.new
+    assert rec.published?
+
+    rec.published = nil
+    assert rec.published?
+
+    rec.published = 'anything'
+    assert rec.published?
+
+    rec.published = false
+    refute rec.published?
+  end
 end
