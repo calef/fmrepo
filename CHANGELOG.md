@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.11] - 2026-01-25
+
+### Added
+
+- `Record.attribute` class macro for defining front matter attribute accessors.
+  - Creates getter and setter methods for specified attributes.
+  - Supports `default:` option for providing default values when attribute is nil.
+  - Example: `attribute :title, :date` or `attribute :tags, default: []`
+- `Record.boolean_attribute` class macro for defining boolean front matter attributes.
+  - Creates getter, setter, and predicate (`?`) methods.
+  - Supports `default:` option to control predicate behavior:
+    - `default: false` (default): predicate returns true only if value is explicitly `true`
+    - `default: true`: predicate returns true unless value is explicitly `false`
+  - Example: `boolean_attribute :published, default: true`
+
 ## [0.2.10] - 2026-01-24
 
 ### Added
@@ -128,6 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite (56 tests)
 - Documentation and examples
 
+[0.2.11]: https://github.com/calef/fmrepo/releases/tag/v0.2.11
 [0.2.10]: https://github.com/calef/fmrepo/releases/tag/v0.2.10
 [0.2.9]: https://github.com/calef/fmrepo/releases/tag/v0.2.9
 [0.2.8]: https://github.com/calef/fmrepo/releases/tag/v0.2.8
