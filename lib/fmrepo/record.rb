@@ -34,6 +34,20 @@ module FMRepo
         }
       end
 
+      # Returns the list of attribute names that have default values.
+      # Includes attributes inherited from parent classes.
+      #
+      # @return [Array<String>] attribute names with defaults
+      def attributes_with_defaults
+        parent_defaults = if superclass.respond_to?(:attributes_with_defaults)
+                            superclass.attributes_with_defaults
+                          else
+                            []
+                          end
+        own_defaults = @attributes_with_defaults || []
+        (parent_defaults + own_defaults).uniq
+      end
+
       # Defines getter and setter methods for front matter attributes.
       #
       # @param names [Array<Symbol>] attribute names
@@ -53,6 +67,9 @@ module FMRepo
           if default.nil?
             define_method(name) { self[key] }
           else
+            # Track this attribute as having a default
+            @attributes_with_defaults ||= []
+            @attributes_with_defaults << key unless @attributes_with_defaults.include?(key)
             # When a default is provided and the value is nil, initialize the
             # front matter with a dup of the default. This ensures:
             # 1. Mutable defaults (arrays, hashes) aren't shared between instances
@@ -411,6 +428,7 @@ module FMRepo
     def save!
       ensure_repo!
       ensure_path!
+      materialize_defaults!
       @repo.write_atomic(@path, serialize)
       @mtime = @path.exist? ? @path.mtime : nil
       @dirty = false
@@ -454,6 +472,14 @@ module FMRepo
     end
 
     private
+
+    # Triggers the getter for each attribute with a default value.
+    # This ensures defaults are written to front_matter before serialization.
+    def materialize_defaults!
+      self.class.attributes_with_defaults.each do |attr|
+        send(attr)
+      end
+    end
 
     def ensure_repo!
       @repo ||= self.class.repo

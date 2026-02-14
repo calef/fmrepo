@@ -281,4 +281,56 @@ class RecordTest < Minitest::Test
     rec.published = false
     refute rec.published?
   end
+
+  def test_attributes_with_defaults_returns_attribute_names
+    klass = Class.new(FMRepo::Record) do
+      attribute :title
+      attribute :tags, default: []
+      attribute :count, default: 0
+    end
+
+    assert_equal %w[tags count], klass.attributes_with_defaults
+  end
+
+  def test_attributes_with_defaults_includes_inherited_attributes
+    parent = Class.new(FMRepo::Record) do
+      attribute :tags, default: []
+    end
+
+    child = Class.new(parent) do
+      attribute :categories, default: []
+    end
+
+    assert_equal %w[tags], parent.attributes_with_defaults
+    assert_equal %w[tags categories], child.attributes_with_defaults
+  end
+
+  def test_save_materializes_attribute_defaults
+    klass = Class.new(FMRepo::Record) do
+      attribute :tags, default: []
+      attribute :metadata, default: {}
+    end
+
+    path = File.join(@tmpdir, 'test.md')
+    rec = klass.new({ 'title' => 'Test' }, body: '', path: path, repo: @repo)
+    rec.save!
+
+    content = File.read(path)
+    assert_includes content, 'tags: []'
+    assert_includes content, 'metadata: {}'
+  end
+
+  def test_save_does_not_overwrite_explicit_values_with_defaults
+    klass = Class.new(FMRepo::Record) do
+      attribute :tags, default: []
+    end
+
+    path = File.join(@tmpdir, 'test.md')
+    rec = klass.new({ 'title' => 'Test', 'tags' => %w[ruby rails] }, body: '', path: path, repo: @repo)
+    rec.save!
+
+    content = File.read(path)
+    assert_includes content, 'ruby'
+    assert_includes content, 'rails'
+  end
 end
