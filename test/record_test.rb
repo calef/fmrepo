@@ -185,4 +185,152 @@ class RecordTest < Minitest::Test
     assert_equal [], config[:exclude]
     assert_nil config[:extensions]
   end
+
+  def test_attribute_creates_getter_and_setter
+    klass = Class.new(FMRepo::Record) do
+      attribute :title, :date
+    end
+
+    rec = klass.new
+    assert_nil rec.title
+    rec.title = 'Test Title'
+    assert_equal 'Test Title', rec.title
+    assert_equal 'Test Title', rec['title']
+  end
+
+  def test_attribute_with_default_returns_default_when_nil
+    klass = Class.new(FMRepo::Record) do
+      attribute :tags, default: []
+    end
+
+    rec = klass.new
+    assert_equal [], rec.tags
+
+    rec.tags = %w[ruby rails]
+    assert_equal %w[ruby rails], rec.tags
+  end
+
+  def test_attribute_with_default_does_not_return_default_when_explicitly_set
+    klass = Class.new(FMRepo::Record) do
+      attribute :tags, default: ['default']
+    end
+
+    rec = klass.new
+    rec['tags'] = []
+    assert_equal [], rec.tags
+  end
+
+  def test_attribute_with_mutable_default_does_not_share_between_instances
+    klass = Class.new(FMRepo::Record) do
+      attribute :tags, default: []
+    end
+
+    rec1 = klass.new
+    rec2 = klass.new
+
+    rec1.tags << 'ruby'
+    assert_equal ['ruby'], rec1.tags
+    assert_equal [], rec2.tags # Should not be affected by rec1's modification
+  end
+
+  def test_boolean_attribute_creates_getter_setter_and_predicate
+    klass = Class.new(FMRepo::Record) do
+      boolean_attribute :locked
+    end
+
+    rec = klass.new
+    assert_nil rec.locked
+    refute rec.locked?
+
+    rec.locked = true
+    assert rec.locked?
+
+    rec.locked = false
+    refute rec.locked?
+  end
+
+  def test_boolean_attribute_with_default_false_requires_explicit_true
+    klass = Class.new(FMRepo::Record) do
+      boolean_attribute :summarized
+    end
+
+    rec = klass.new
+    refute rec.summarized?
+
+    rec.summarized = 'yes'
+    refute rec.summarized?
+
+    rec.summarized = true
+    assert rec.summarized?
+  end
+
+  def test_boolean_attribute_with_default_true_returns_true_unless_false
+    klass = Class.new(FMRepo::Record) do
+      boolean_attribute :published, default: true
+    end
+
+    rec = klass.new
+    assert rec.published?
+
+    rec.published = nil
+    assert rec.published?
+
+    rec.published = 'anything'
+    assert rec.published?
+
+    rec.published = false
+    refute rec.published?
+  end
+
+  def test_attributes_with_defaults_returns_attribute_names
+    klass = Class.new(FMRepo::Record) do
+      attribute :title
+      attribute :tags, default: []
+      attribute :count, default: 0
+    end
+
+    assert_equal %w[tags count], klass.attributes_with_defaults
+  end
+
+  def test_attributes_with_defaults_includes_inherited_attributes
+    parent = Class.new(FMRepo::Record) do
+      attribute :tags, default: []
+    end
+
+    child = Class.new(parent) do
+      attribute :categories, default: []
+    end
+
+    assert_equal %w[tags], parent.attributes_with_defaults
+    assert_equal %w[tags categories], child.attributes_with_defaults
+  end
+
+  def test_save_materializes_attribute_defaults
+    klass = Class.new(FMRepo::Record) do
+      attribute :tags, default: []
+      attribute :metadata, default: {}
+    end
+
+    path = File.join(@tmpdir, 'test.md')
+    rec = klass.new({ 'title' => 'Test' }, body: '', path: path, repo: @repo)
+    rec.save!
+
+    content = File.read(path)
+    assert_includes content, 'tags: []'
+    assert_includes content, 'metadata: {}'
+  end
+
+  def test_save_does_not_overwrite_explicit_values_with_defaults
+    klass = Class.new(FMRepo::Record) do
+      attribute :tags, default: []
+    end
+
+    path = File.join(@tmpdir, 'test.md')
+    rec = klass.new({ 'title' => 'Test', 'tags' => %w[ruby rails] }, body: '', path: path, repo: @repo)
+    rec.save!
+
+    content = File.read(path)
+    assert_includes content, 'ruby'
+    assert_includes content, 'rails'
+  end
 end

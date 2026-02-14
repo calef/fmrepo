@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module FMRepo
-  class Record
+  class Record # rubocop:disable Metrics/ClassLength
     class << self
       def config
         @config ||= ModelConfig.new(relation_class: FMRepo::Relation)
@@ -32,6 +32,94 @@ module FMRepo
           exclude: config.exclude,
           extensions: config.extensions
         }
+      end
+
+      # Returns the list of attribute names that have default values.
+      # Includes attributes inherited from parent classes.
+      #
+      # @return [Array<String>] attribute names with defaults
+      def attributes_with_defaults
+        parent_defaults = if superclass.respond_to?(:attributes_with_defaults)
+                            superclass.attributes_with_defaults
+                          else
+                            []
+                          end
+        own_defaults = @attributes_with_defaults || []
+        (parent_defaults + own_defaults).uniq
+      end
+
+      # Defines getter and setter methods for front matter attributes.
+      #
+      # @param names [Array<Symbol>] attribute names
+      # @param default [Object, nil] default value for getter when attribute is nil
+      #
+      # @example Simple accessor
+      #   attribute :title, :date
+      #   # Creates: title, title=, date, date=
+      #
+      # @example Accessor with default value
+      #   attribute :tags, default: []
+      #   # Creates: tags (returns [] if nil), tags=
+      def attribute(*names, default: nil)
+        names.each do |name|
+          key = name.to_s
+
+          if default.nil?
+            define_method(name) { self[key] }
+          else
+            # Track this attribute as having a default
+            @attributes_with_defaults ||= []
+            @attributes_with_defaults << key unless @attributes_with_defaults.include?(key)
+            # When a default is provided and the value is nil, initialize the
+            # front matter with a dup of the default. This ensures:
+            # 1. Mutable defaults (arrays, hashes) aren't shared between instances
+            # 2. Modifications to the returned value persist in the record
+            define_method(name) do
+              value = self[key]
+              if value.nil?
+                default_value = begin
+                  default.dup
+                rescue TypeError
+                  default
+                end
+                self[key] = default_value
+                default_value
+              else
+                value
+              end
+            end
+          end
+
+          define_method(:"#{name}=") { |value| self[key] = value }
+        end
+      end
+
+      # Defines getter, setter, and predicate methods for boolean front matter attributes.
+      #
+      # @param name [Symbol] attribute name
+      # @param default [Boolean] if true, predicate returns true unless explicitly false;
+      #   if false (default), predicate returns true only if explicitly true
+      #
+      # @example Boolean with false default
+      #   boolean_attribute :locked
+      #   # Creates: locked, locked=, locked? (true only if explicitly true)
+      #
+      # @example Boolean with true default
+      #   boolean_attribute :published, default: true
+      #   # Creates: published, published=, published? (true unless explicitly false)
+      def boolean_attribute(name, default: false)
+        key = name.to_s
+
+        define_method(name) { self[key] }
+        define_method(:"#{name}=") { |value| self[key] = value }
+
+        if default
+          # Default true: returns true unless explicitly false
+          define_method(:"#{name}?") { self[key] != false }
+        else
+          # Default false: returns true only if explicitly true
+          define_method(:"#{name}?") { self[key] == true }
+        end
       end
 
       def naming(&block)
@@ -340,6 +428,7 @@ module FMRepo
     def save!
       ensure_repo!
       ensure_path!
+      materialize_defaults!
       @repo.write_atomic(@path, serialize)
       @mtime = @path.exist? ? @path.mtime : nil
       @dirty = false
@@ -383,6 +472,14 @@ module FMRepo
     end
 
     private
+
+    # Triggers the getter for each attribute with a default value.
+    # This ensures defaults are written to front_matter before serialization.
+    def materialize_defaults!
+      self.class.attributes_with_defaults.each do |attr|
+        send(attr)
+      end
+    end
 
     def ensure_repo!
       @repo ||= self.class.repo

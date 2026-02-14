@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    fmrepo (0.2.10)
+    fmrepo (0.2.12)
 
 GEM
   remote: https://rubygems.org/
@@ -60,7 +60,7 @@ DEPENDENCIES
   mutex_m
   ostruct
   rake (~> 13.3)
-  rubocop (~> 1.82)
+  rubocop (~> 1.84)
   simplecov (~> 0.22)
 
 BUNDLED WITH
