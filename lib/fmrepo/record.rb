@@ -465,9 +465,14 @@ module FMRepo
       out = +"---\n"
       out << yaml
       out << "\n" unless out.end_with?("\n")
-      out << "---\n\n"
-      out << @body.to_s
-      out << "\n" unless out.end_with?("\n")
+      body_str = @body.to_s
+      if body_str.empty?
+        out << "---\n"
+      else
+        out << "---\n\n"
+        out << body_str
+        out << "\n" unless out.end_with?("\n")
+      end
       out
     end
 
