@@ -449,6 +449,8 @@ module FMRepo
       ensure_path!
       materialize_defaults!
       if @front_matter_only
+        # patch_save! writes only the front-matter section; the record remains
+        # front_matter_only? afterward since the body was never loaded into memory.
         patch_save!
       else
         @repo.write_atomic(@path, serialize)
@@ -530,6 +532,8 @@ module FMRepo
     # Updates front matter in-place on disk without loading or replacing the body.
     # Used when the record was loaded with front_matter_only: true.
     def patch_save!
+      raise 'Cannot patch_save! a new record' if @new_record
+
       raw = @repo.read(@path)
       _old_fm, raw_body = self.class.parse_front_matter(raw)
       sorted_fm = (@front_matter || {}).sort.to_h

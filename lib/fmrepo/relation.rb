@@ -76,6 +76,8 @@ module FMRepo
     def first = limit(1).to_a.first
     def count = to_a.length
 
+    # NOTE: front_matter_only: is only supported for direct lookups via find.
+    # Bulk iteration via where/all always loads full records including body.
     def find(id, front_matter_only: false)
       rel = Pathname.new(id.to_s)
       abs = @repo.abs(rel)
