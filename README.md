@@ -222,6 +222,7 @@ Post.published.recent.to_a
 - `id` - Get repo-relative path
 - `persisted?` - Check if saved
 - `new_record?` - Check if new
+- `dirty?` - Check if record has unsaved changes
 
 ### Predicates
 
