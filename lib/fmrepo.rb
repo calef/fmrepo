@@ -40,16 +40,18 @@ module FMRepo
     end
   end
 
+  # Yields the configuration object for modification.
+  #
+  # This method is intended for use during single-threaded application boot.
+  # The mutex protects config initialization and registry reset individually,
+  # but the yield to the caller is not serialized — concurrent calls to
+  # configure may interleave their mutations.
   def self.configure
-    @mutex.synchronize do
-      cfg = ensure_config!
-      @mutex.unlock
-      begin
-        yield cfg
-      ensure
-        @mutex.lock
-      end
-      @repository_registry&.reset!
+    cfg = @mutex.synchronize { ensure_config! }
+    begin
+      yield cfg
+    ensure
+      @mutex.synchronize { @repository_registry&.reset! }
     end
   end
 

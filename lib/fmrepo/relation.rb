@@ -63,10 +63,15 @@ module FMRepo
     def each(&) = to_a.each(&)
 
     def to_a
-      docs = load_all
-      docs = apply_filters(docs)
-      docs = apply_orders(docs)
-      apply_offset_limit(docs)
+      if @orders.empty? && @limit_n
+        docs = load_matching(max: @offset_n + @limit_n)
+        apply_offset_limit(docs)
+      else
+        docs = load_all
+        docs = apply_filters(docs)
+        docs = apply_orders(docs)
+        apply_offset_limit(docs)
+      end
     end
 
     def first = limit(1).to_a.first
@@ -85,6 +90,23 @@ module FMRepo
     end
 
     private
+
+    def load_matching(max:)
+      cfg = @model.config
+      raise ArgumentError, "#{@model.name} has no scope glob" unless cfg.glob
+
+      paths = @repo.glob(cfg.glob)
+      paths = apply_excludes(paths, cfg.exclude)
+      matched = []
+      paths.each do |p|
+        rec = @model.load_from_path(repo: @repo, abs_path: p)
+        next unless @filters.all? { |crit| matches_criteria?(rec, crit) }
+
+        matched << rec
+        break if matched.size >= max
+      end
+      matched
+    end
 
     def load_all
       cfg = @model.config
@@ -144,7 +166,13 @@ module FMRepo
       reader = SPECIAL_FIELD_READERS[field.to_s]
       return reader.call(rec) if reader
 
-      rec.front_matter[field.to_s]
+      key = field.to_s
+      method_name = key.to_sym
+      if rec.class.method_defined?(method_name) && !FMRepo::Record.method_defined?(method_name)
+        rec.public_send(method_name)
+      else
+        rec.front_matter[key]
+      end
     end
 
     def compare_with_nil(left, right)

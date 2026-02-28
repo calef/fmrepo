@@ -36,6 +36,12 @@ class IntegrationTest < Minitest::Test
     relation_class PlaceRelation
   end
 
+  class Article < FMRepo::Record
+    scope glob: '_articles/*.md'
+    boolean_attribute :published, default: true
+    attribute :title
+  end
+
   class UnboundModel < FMRepo::Record
     scope glob: '*.md'
   end
@@ -273,6 +279,59 @@ class IntegrationTest < Minitest::Test
     assert_raises(FMRepo::NotBoundError) do
       UnboundModel.all.to_a
     end
+  end
+
+  def test_where_limit_without_order_stops_reading_files_early
+    # Create enough files so we can observe early termination.
+    # Setup already creates 3 places (seattle, bellevue, spokane) all with county King or Spokane.
+    # Add more King county places so we have plenty of matches beyond the limit.
+    5.times do |i|
+      create_place("extra-#{i}.md", { 'title' => "Extra #{i}", 'county' => 'King', 'tags' => %w[wa] }, "Extra #{i}")
+    end
+
+    # There are now 8 files total, 7 with county=King.
+    # Track how many files load_from_path reads.
+    load_count = 0
+    original_method = Place.method(:load_from_path)
+    Place.define_singleton_method(:load_from_path) do |**kwargs|
+      load_count += 1
+      original_method.call(**kwargs)
+    end
+
+    begin
+      results = Place.where('county' => 'King').limit(2).to_a
+      assert_equal 2, results.length
+      assert(results.all? { |p| p['county'] == 'King' })
+      # Should have loaded far fewer than all 8 files.
+      # The first two King county matches are found before reading everything.
+      assert load_count < 8, "Expected early termination but load_from_path was called #{load_count} times for 8 files"
+    ensure
+      Place.define_singleton_method(:load_from_path, original_method)
+    end
+  end
+
+  def test_where_on_attribute_with_default_matches_unset_records
+    # Create articles — one with published explicitly false, two without published set at all
+    articles_dir = File.join(@tmpdir, '_articles')
+    FileUtils.mkdir_p(articles_dir)
+
+    File.write(File.join(articles_dir, 'draft.md'), "---\npublished: false\ntitle: Draft\n---\n\nDraft body\n")
+    File.write(File.join(articles_dir, 'post-a.md'), "---\ntitle: Post A\n---\n\nPost A body\n")
+    File.write(File.join(articles_dir, 'post-b.md'), "---\ntitle: Post B\n---\n\nPost B body\n")
+
+    Article.repository(@repo)
+
+    # where(published: true) should match the two articles without published set,
+    # because their boolean_attribute default is true and the getter materializes it.
+    results = Article.where('published' => true).to_a
+    assert_equal 2, results.length
+    titles = results.map(&:title).sort
+    assert_equal ['Post A', 'Post B'], titles
+
+    # where(published: false) should match only the draft
+    drafts = Article.where('published' => false).to_a
+    assert_equal 1, drafts.length
+    assert_equal 'Draft', drafts.first.title
   end
 
   def test_reserved_fields

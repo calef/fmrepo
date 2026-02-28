@@ -110,16 +110,28 @@ module FMRepo
       def boolean_attribute(name, default: false)
         key = name.to_s
 
-        define_method(name) { self[key] }
-        define_method(:"#{name}=") { |value| self[key] = value }
-
         if default
-          # Default true: returns true unless explicitly false
+          # Track this attribute as having a default so it gets materialized on save
+          @attributes_with_defaults ||= []
+          @attributes_with_defaults << key unless @attributes_with_defaults.include?(key)
+
+          # Default true: getter materializes the default into front matter
+          define_method(name) do
+            value = self[key]
+            if value.nil?
+              self[key] = true
+              true
+            else
+              value
+            end
+          end
           define_method(:"#{name}?") { self[key] != false }
         else
-          # Default false: returns true only if explicitly true
+          define_method(name) { self[key] }
           define_method(:"#{name}?") { self[key] == true }
         end
+
+        define_method(:"#{name}=") { |value| self[key] = value }
       end
 
       def naming(&block)

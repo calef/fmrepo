@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.14] - 2026-02-28
+
+### Fixed
+
+- `FMRepo.configure` now uses exception-safe mutex handling. The registry is
+  always reset via `begin/ensure`, even when the configuration block raises.
+  The previous manual `unlock`/`lock` pattern inside `synchronize` was fragile
+  and could leave the mutex in an inconsistent state.
+- `boolean_attribute` with `default: true` now materializes the default value
+  into front matter on `save!`, matching the existing behavior of `attribute`
+  with defaults.
+- `Relation#where` queries now respect attribute defaults by calling getter
+  methods (when defined) instead of reading raw front matter. For example,
+  `where('published' => true)` now correctly matches records where `published`
+  was never explicitly set but has `default: true`.
+
+### Changed
+
+- `Relation#to_a` now short-circuits file loading when a `limit` is set and no
+  ordering is required. Previously all matching files were read and parsed
+  regardless of limit.
+
 ## [0.2.13] - 2026-02-24
 
 ### Fixed
@@ -161,6 +183,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite (56 tests)
 - Documentation and examples
 
+[0.2.14]: https://github.com/calef/fmrepo/releases/tag/v0.2.14
 [0.2.13]: https://github.com/calef/fmrepo/releases/tag/v0.2.13
 [0.2.12]: https://github.com/calef/fmrepo/releases/tag/v0.2.12
 [0.2.11]: https://github.com/calef/fmrepo/releases/tag/v0.2.11
