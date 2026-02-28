@@ -62,4 +62,19 @@ class ConfigTest < Minitest::Test
   ensure
     file&.unlink
   end
+
+  def test_load_yaml_raises_on_non_hash_env_map
+    file = Tempfile.new('fmrepo-config-bad')
+    file.write <<~YAML
+      default: /just/a/path
+    YAML
+    file.close
+
+    config = FMRepo::Config.new
+    error = assert_raises(ArgumentError) { config.load_yaml(file.path) }
+    assert_includes error.message, 'Expected a Hash'
+    assert_includes error.message, '"default"'
+  ensure
+    file&.unlink
+  end
 end

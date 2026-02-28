@@ -262,6 +262,14 @@ class IntegrationTest < Minitest::Test
     refute FMRepo.between(5, 10).call(3)
   end
 
+  def test_predicates_return_false_for_incomparable_types
+    refute FMRepo.gt(5).call('text')
+    refute FMRepo.gte(5).call(nil)
+    refute FMRepo.lt(10).call([1, 2])
+    refute FMRepo.lte(10).call({})
+    refute FMRepo.between(1, 10).call('abc')
+  end
+
   def test_slugify
     assert_equal 'hello-world', FMRepo.slugify('Hello World')
     assert_equal 'hello-world', FMRepo.slugify('hello world')

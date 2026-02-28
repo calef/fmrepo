@@ -163,10 +163,13 @@ module FMRepo
       # - instance method: author (lazy loads the Author record)
       # - instance method: author_id (getter for foreign key)
       # - instance method: author_id= (setter for foreign key)
+      #
+      # @param name [Symbol] association name
+      # @param class_name [String, nil] explicit class name for the association (e.g., "Writer")
       # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
-      def belongs_to(name)
+      def belongs_to(name, class_name: nil)
         foreign_key = "#{name}_id"
-        association_class_name = name.to_s.split('_').map(&:capitalize).join
+        association_class_name = class_name || name.to_s.split('_').map(&:capitalize).join
 
         # Define foreign_key getter method
         define_method(foreign_key) do
@@ -189,18 +192,7 @@ module FMRepo
           fk_value = self[foreign_key]
           return nil unless fk_value
 
-          # Resolve the association class
-          klass = begin
-            Object.const_get(association_class_name)
-          rescue NameError
-            # Try within the same namespace as the current class
-            namespace_parts = self.class.name.split('::')[0..-2]
-            raise if namespace_parts.empty?
-
-            namespace_parts.reduce(Object) do |mod, const_name|
-              mod.const_get(const_name)
-            end.const_get(association_class_name)
-          end
+          klass = self.class.send(:resolve_association_class, self, association_class_name)
 
           # Load and cache the associated record
           result = klass.find(fk_value)
@@ -227,29 +219,20 @@ module FMRepo
       # Example: has_many :posts
       # Creates:
       # - instance method: posts (returns relation of Post records where post.{model}_id == self.id)
-      # Note: Uses simple pluralization (strips trailing 's'). Irregular plurals like 'categories' must be
-      # defined as singular in the model name (e.g., has_many :categories expects a Category class).
-      def has_many(name) # rubocop:disable Naming/PredicatePrefix
+      #
+      # @param name [Symbol] association name (plural)
+      # @param class_name [String, nil] explicit class name for the association (e.g., "Category").
+      #   By default, strips trailing 's' and capitalizes. Use this option for irregular plurals.
+      def has_many(name, class_name: nil) # rubocop:disable Naming/PredicatePrefix
         singular = name.to_s.sub(/s$/, '')
-        association_class_name = singular.split('_').map(&:capitalize).join
+        association_class_name = class_name || singular.split('_').map(&:capitalize).join
 
         define_method(name) do
           # Return cached association if available
           ivar = :"@_association_#{name}"
           return instance_variable_get(ivar) if instance_variable_defined?(ivar)
 
-          # Resolve the association class
-          klass = begin
-            Object.const_get(association_class_name)
-          rescue NameError
-            # Try within the same namespace as the current class
-            namespace_parts = self.class.name.split('::')[0..-2]
-            raise if namespace_parts.empty?
-
-            namespace_parts.reduce(Object) do |mod, const_name|
-              mod.const_get(const_name)
-            end.const_get(association_class_name)
-          end
+          klass = self.class.send(:resolve_association_class, self, association_class_name)
 
           # Calculate the foreign key name based on this model's name
           this_model_name = self.class.name.split('::').last.downcase
@@ -357,6 +340,17 @@ module FMRepo
       end
 
       private
+
+      def resolve_association_class(instance, class_name)
+        Object.const_get(class_name)
+      rescue NameError
+        namespace_parts = instance.class.name.split('::')[0..-2]
+        raise if namespace_parts.empty?
+
+        namespace_parts.reduce(Object) do |mod, const_name|
+          mod.const_get(const_name)
+        end.const_get(class_name)
+      end
 
       def front_matter_content?(content)
         content.start_with?("---\n", "---\r\n") && content.lines.first&.strip == '---'
