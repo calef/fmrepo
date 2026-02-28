@@ -82,7 +82,7 @@ module FMRepo
     end
 
     def count
-      if @orders.empty? && @limit_n.nil?
+      if @orders.empty? && @limit_n.nil? && @offset_n.zero?
         load_matching_count
       else
         to_a.length
