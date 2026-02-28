@@ -320,6 +320,45 @@ class RecordTest < Minitest::Test
     assert_includes content, 'metadata: {}'
   end
 
+  def test_save_materializes_boolean_attribute_default_true
+    klass = Class.new(FMRepo::Record) do
+      boolean_attribute :published, default: true
+    end
+
+    path = File.join(@tmpdir, 'test.md')
+    rec = klass.new({ 'title' => 'Test' }, body: '', path: path, repo: @repo)
+    rec.save!
+
+    content = File.read(path)
+    assert_includes content, 'published: true'
+  end
+
+  def test_save_does_not_overwrite_explicit_false_for_boolean_attribute_default_true
+    klass = Class.new(FMRepo::Record) do
+      boolean_attribute :published, default: true
+    end
+
+    path = File.join(@tmpdir, 'test.md')
+    rec = klass.new({ 'title' => 'Test', 'published' => false }, body: '', path: path, repo: @repo)
+    rec.save!
+
+    content = File.read(path)
+    assert_includes content, 'published: false'
+  end
+
+  def test_save_does_not_materialize_boolean_attribute_default_false
+    klass = Class.new(FMRepo::Record) do
+      boolean_attribute :locked
+    end
+
+    path = File.join(@tmpdir, 'test.md')
+    rec = klass.new({ 'title' => 'Test' }, body: '', path: path, repo: @repo)
+    rec.save!
+
+    content = File.read(path)
+    refute_includes content, 'locked'
+  end
+
   def test_save_does_not_overwrite_explicit_values_with_defaults
     klass = Class.new(FMRepo::Record) do
       attribute :tags, default: []
