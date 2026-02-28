@@ -25,13 +25,14 @@ module FMRepo
 
       require 'tempfile'
       tmp = Tempfile.create([abs.basename.to_s, '.tmp'], dir)
+      tmp_path = tmp.path
       begin
         tmp.write(content)
         tmp.close
-        FileUtils.mv(tmp.path, abs.to_s)
+        FileUtils.mv(tmp_path, abs.to_s)
       ensure
         tmp.close unless tmp.closed?
-        tmp.unlink if tmp && File.exist?(tmp.path)
+        File.delete(tmp_path) if File.exist?(tmp_path)
       end
     end
 
@@ -40,6 +41,8 @@ module FMRepo
       FileUtils.rm_f(Pathname.new(abs_path).to_s)
     end
 
+    MAX_COLLISION_ATTEMPTS = 10_000
+
     def resolve_collision(rel_path)
       rel = Pathname.new(rel_path.to_s)
       abs = @root.join(rel)
@@ -47,13 +50,12 @@ module FMRepo
 
       base = rel.sub_ext('')
       ext = rel.extname
-      i = 2
-      loop do
+      2.upto(MAX_COLLISION_ATTEMPTS) do |i|
         candidate = Pathname.new("#{base}-#{i}#{ext}")
         return candidate unless @root.join(candidate).exist?
-
-        i += 1
       end
+
+      raise Error, "Could not resolve filename collision for #{rel} after #{MAX_COLLISION_ATTEMPTS} attempts"
     end
 
     def abs(rel_path)

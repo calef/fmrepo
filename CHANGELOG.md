@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.17] - 2026-02-28
+
+### Fixed
+
+- `Relation#first` no longer allocates an intermediate Relation via `limit(1)`.
+  When no ordering is required, it uses the `load_matching` fast path directly.
+  When ordering is required, it calls `to_a.first` without the extra allocation.
+- `Relation#count` now skips sorting and offset/limit when no ordering is present,
+  counting filtered matches directly. For unfiltered queries, it counts glob
+  matches without parsing file contents.
+- `Repository#write_atomic` captures the temp file path before the `begin` block,
+  preventing potential issues if the `Tempfile` object state changes after a
+  failed `mv`.
+- `Repository#resolve_collision` now raises `FMRepo::Error` after 10,000 attempts
+  instead of looping indefinitely.
+
+### Added
+
+- `Record#dirty?` returns whether the record has unsaved changes. Complements the
+  existing `persisted?` and `new_record?` methods.
+
 ## [0.2.16] - 2026-02-28
 
 ### Added
@@ -214,6 +235,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite (56 tests)
 - Documentation and examples
 
+[0.2.17]: https://github.com/calef/fmrepo/releases/tag/v0.2.17
 [0.2.16]: https://github.com/calef/fmrepo/releases/tag/v0.2.16
 [0.2.15]: https://github.com/calef/fmrepo/releases/tag/v0.2.15
 [0.2.14]: https://github.com/calef/fmrepo/releases/tag/v0.2.14
