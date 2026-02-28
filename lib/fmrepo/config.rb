@@ -18,8 +18,12 @@ module FMRepo
       end
       data.each do |role, env_map|
         role_key = role.to_sym
+        unless env_map.is_a?(Hash)
+          raise ArgumentError,
+                "Expected a Hash of environment => path for role #{role.inspect} in #{path}, got #{env_map.class}"
+        end
         repositories[role_key] ||= {}
-        Array(env_map).each do |env, value|
+        env_map.each do |env, value|
           repositories[role_key][env.to_s] = value
         end
       end

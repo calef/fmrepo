@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.15] - 2026-02-28
+
+### Fixed
+
+- `Predicates.comparable?` now actually attempts the `<=>` comparison instead of
+  unconditionally returning `true`. The `rescue` clause was previously dead code.
+  Incomparable types (e.g., `gt(5).call("text")`) now correctly return `false`.
+- `Config#load_yaml` now raises `ArgumentError` with a clear message when a role's
+  value is not a Hash of environment mappings (e.g., `default: /path` instead of
+  `default: { development: /path }`).
+
+### Changed
+
+- Extracted duplicated namespace-aware constant resolution from `belongs_to` and
+  `has_many` into a shared `resolve_association_class` private class method.
+
+### Added
+
+- `belongs_to` and `has_many` now accept an optional `class_name:` parameter for
+  explicit class resolution, fixing irregular plurals (e.g.,
+  `has_many :categories, class_name: "Category"`).
+
 ## [0.2.14] - 2026-02-28
 
 ### Fixed
@@ -183,6 +205,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite (56 tests)
 - Documentation and examples
 
+[0.2.15]: https://github.com/calef/fmrepo/releases/tag/v0.2.15
 [0.2.14]: https://github.com/calef/fmrepo/releases/tag/v0.2.14
 [0.2.13]: https://github.com/calef/fmrepo/releases/tag/v0.2.13
 [0.2.12]: https://github.com/calef/fmrepo/releases/tag/v0.2.12

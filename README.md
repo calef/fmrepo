@@ -276,6 +276,8 @@ class Post < FMRepo::Record
   scope glob: "_posts/**/*.md"
   
   belongs_to :author  # Creates author_id foreign key and author accessor
+  # Or with explicit class name:
+  # belongs_to :creator, class_name: "Author"
   
   naming do |front_matter:, **|
     "_posts/#{FMRepo.slugify(front_matter['title'])}.md"
@@ -343,6 +345,8 @@ class Author < FMRepo::Record
   scope glob: "_authors/**/*.md"
   
   has_many :posts  # Returns posts where post.author_id == self.id
+  # Or with explicit class name for irregular plurals:
+  # has_many :categories, class_name: "Category"
   
   naming do |front_matter:, **|
     "_authors/#{FMRepo.slugify(front_matter['name'])}.md"
@@ -401,10 +405,16 @@ comment_authors = comments.map { |c| c.post.author["name"] }.uniq
 - Supports all relation methods (`where`, `order`, `limit`, etc.)
 - Returns an empty relation for unpersisted records (maintains chainability)
 - Uses simple pluralization (strips trailing 's' from association name)
+- Supports `class_name:` option for explicit class resolution
 - Caches the relation for performance
 
-**Pluralization Note:** The association uses simple pluralization by stripping the trailing 's'. For irregular plurals
-like "categories", the model should be named using the singular form (e.g., `has_many :categories` expects a `Category` class).
+**Pluralization Note:** The association uses simple pluralization by stripping the trailing 's'. For irregular plurals,
+use the `class_name:` option:
+
+```ruby
+has_many :categories, class_name: "Category"
+has_many :addresses, class_name: "Address"
+```
 
 ### Nested Associations
 
@@ -426,6 +436,11 @@ Associations automatically resolve class names from the association name:
 
 - `belongs_to :author` looks for an `Author` class
 - `has_many :blog_posts` looks for a `BlogPost` class
+
+You can override the inferred class name with the `class_name:` option:
+
+- `belongs_to :creator, class_name: "Author"` looks for `Author` instead of `Creator`
+- `has_many :categories, class_name: "Category"` looks for `Category` instead of `Categorie`
 
 The resolution tries:
 

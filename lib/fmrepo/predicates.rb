@@ -51,8 +51,7 @@ module FMRepo
     def comparable?(value, other)
       return false unless value.respond_to?(:<=>) && other.respond_to?(:<=>)
 
-      # Test if they're actually comparable by attempting a comparison
-      true
+      (value <=> other) != nil
     rescue ArgumentError, NoMethodError
       false
     end

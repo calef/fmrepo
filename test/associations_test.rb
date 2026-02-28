@@ -40,6 +40,26 @@ class AssociationsTest < Minitest::Test
     belongs_to :post
   end
 
+  # Models using explicit class_name option
+  class Category < FMRepo::Record
+    scope glob: '_categories/**/*.md'
+    naming { |front_matter:, **| "_categories/#{front_matter['slug'] || 'category'}.md" }
+  end
+
+  class PostWithCategories < FMRepo::Record
+    scope glob: '_categorized_posts/**/*.md'
+    naming { |front_matter:, **| "_categorized_posts/#{front_matter['slug'] || 'post'}.md" }
+
+    has_many :categories, class_name: 'AssociationsTest::Category'
+  end
+
+  class ArticleWithExplicitAuthor < FMRepo::Record
+    scope glob: '_explicit_articles/**/*.md'
+    naming { |front_matter:, **| "_explicit_articles/#{front_matter['slug'] || 'article'}.md" }
+
+    belongs_to :creator, class_name: 'AssociationsTest::Author'
+  end
+
   # Namespaced models for testing association resolution
   module TestNamespace
     class Article < FMRepo::Record
@@ -323,5 +343,39 @@ class AssociationsTest < Minitest::Test
     articles = writer.articles.to_a
     assert_equal 1, articles.length
     assert_equal 'Test Article', articles.first['title']
+  end
+
+  def test_has_many_with_explicit_class_name
+    FileUtils.mkdir_p(File.join(@tmpdir, '_categories'))
+    FileUtils.mkdir_p(File.join(@tmpdir, '_categorized_posts'))
+
+    Category.repository(@repo)
+    PostWithCategories.repository(@repo)
+
+    post = PostWithCategories.create!({ 'slug' => 'my-post', 'title' => 'My Post' }, body: 'Content')
+    Category.create!({ 'slug' => 'ruby', 'name' => 'Ruby', 'postwithcategories_id' => post.id }, body: '')
+    Category.create!({ 'slug' => 'rails', 'name' => 'Rails', 'postwithcategories_id' => post.id }, body: '')
+
+    categories = post.categories.to_a
+    assert_equal 2, categories.length
+    names = categories.map { |c| c['name'] }.sort
+    assert_equal %w[Rails Ruby], names
+  end
+
+  def test_belongs_to_with_explicit_class_name
+    FileUtils.mkdir_p(File.join(@tmpdir, '_explicit_articles'))
+
+    Author.repository(@repo)
+    ArticleWithExplicitAuthor.repository(@repo)
+
+    author = Author.create!({ 'slug' => 'explicit-author', 'name' => 'Explicit Author' }, body: 'Bio')
+    article = ArticleWithExplicitAuthor.create!(
+      { 'slug' => 'explicit-article', 'title' => 'Explicit Article', 'creator_id' => author.id },
+      body: 'Content'
+    )
+
+    loaded = ArticleWithExplicitAuthor.find(article.id)
+    assert_equal 'Explicit Author', loaded.creator['name']
+    assert_equal author.id, loaded.creator.id
   end
 end
