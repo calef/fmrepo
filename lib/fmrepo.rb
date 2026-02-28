@@ -41,16 +41,9 @@ module FMRepo
   end
 
   def self.configure
-    @mutex.synchronize do
-      cfg = ensure_config!
-      @mutex.unlock
-      begin
-        yield cfg
-      ensure
-        @mutex.lock
-      end
-      @repository_registry&.reset!
-    end
+    cfg = @mutex.synchronize { ensure_config! }
+    yield cfg
+    @mutex.synchronize { @repository_registry&.reset! }
   end
 
   def self.repository_registry
