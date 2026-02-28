@@ -166,7 +166,13 @@ module FMRepo
       reader = SPECIAL_FIELD_READERS[field.to_s]
       return reader.call(rec) if reader
 
-      rec.front_matter[field.to_s]
+      key = field.to_s
+      method_name = key.to_sym
+      if rec.class.method_defined?(method_name) && !FMRepo::Record.method_defined?(method_name)
+        rec.public_send(method_name)
+      else
+        rec.front_matter[key]
+      end
     end
 
     def compare_with_nil(left, right)
