@@ -24,7 +24,7 @@ class RepositoryTest < Minitest::Test
 
     results = @repo.glob('**/*.md')
     assert_equal 2, results.length
-    assert(results.all? { |p| p.is_a?(Pathname) })
+    assert(results.all?(Pathname))
   end
 
   def test_read_returns_file_content

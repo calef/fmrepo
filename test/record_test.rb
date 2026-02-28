@@ -372,4 +372,66 @@ class RecordTest < Minitest::Test
     assert_includes content, 'ruby'
     assert_includes content, 'rails'
   end
+
+  def test_load_from_path_front_matter_only_skips_body
+    record = FMRepo::Record.new({ 'title' => 'Test', 'count' => 42 }, body: 'Big XML body here')
+    record.instance_variable_set(:@repo, @repo)
+    record.instance_variable_set(:@path, Pathname.new(File.join(@tmpdir, 'test.md')))
+    record.instance_variable_set(:@new_record, false)
+    @repo.write_atomic(record.path, record.serialize)
+
+    loaded = FMRepo::Record.load_from_path(repo: @repo, abs_path: record.path, front_matter_only: true)
+
+    assert loaded.front_matter_only?
+    assert_equal 'Test', loaded['title']
+    assert_equal 42, loaded['count']
+    assert_nil loaded.body
+  end
+
+  def test_front_matter_only_save_preserves_body
+    record = FMRepo::Record.new({ 'title' => 'Original' }, body: 'Preserved body content')
+    record.instance_variable_set(:@repo, @repo)
+    record.instance_variable_set(:@path, Pathname.new(File.join(@tmpdir, 'patch_test.md')))
+    record.instance_variable_set(:@new_record, false)
+    @repo.write_atomic(record.path, record.serialize)
+
+    # Load front-matter-only and update a field
+    fm_record = FMRepo::Record.load_from_path(repo: @repo, abs_path: record.path, front_matter_only: true)
+    fm_record['title'] = 'Updated'
+    fm_record['refreshed_at'] = '2026-01-01T00:00:00Z'
+    fm_record.save!
+
+    # Reload the full record and verify body was preserved
+    full_record = FMRepo::Record.load_from_path(repo: @repo, abs_path: record.path)
+    assert_equal 'Updated', full_record['title']
+    assert_equal '2026-01-01T00:00:00Z', full_record['refreshed_at']
+    assert_equal 'Preserved body content', full_record.body.strip
+  end
+
+  def test_body_assignment_clears_front_matter_only
+    record = FMRepo::Record.new({ 'title' => 'Test' }, body: 'original body')
+    record.instance_variable_set(:@repo, @repo)
+    record.instance_variable_set(:@path, Pathname.new(File.join(@tmpdir, 'body_clear_test.md')))
+    record.instance_variable_set(:@new_record, false)
+    record.instance_variable_set(:@front_matter_only, true)
+
+    assert record.front_matter_only?
+    record.body = 'new body'
+    refute record.front_matter_only?
+  end
+
+  def test_reload_clears_front_matter_only
+    record = FMRepo::Record.new({ 'title' => 'Test' }, body: 'body content')
+    record.instance_variable_set(:@repo, @repo)
+    record.instance_variable_set(:@path, Pathname.new(File.join(@tmpdir, 'reload_clear_test.md')))
+    record.instance_variable_set(:@new_record, false)
+    @repo.write_atomic(record.path, record.serialize)
+
+    fm_record = FMRepo::Record.load_from_path(repo: @repo, abs_path: record.path, front_matter_only: true)
+    assert fm_record.front_matter_only?
+
+    fm_record.reload
+    refute fm_record.front_matter_only?
+    assert_equal 'body content', fm_record.body.strip
+  end
 end

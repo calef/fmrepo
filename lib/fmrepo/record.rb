@@ -213,7 +213,7 @@ module FMRepo
           end
         end
       end
-      # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
+      # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
       # has_many association
       # Example: has_many :posts
@@ -291,8 +291,8 @@ module FMRepo
         relation.offset(count)
       end
 
-      def find(id)
-        relation.find(id)
+      def find(id, front_matter_only: false)
+        relation.find(id, front_matter_only:)
       end
 
       def find_by(criteria = {})
@@ -312,13 +312,14 @@ module FMRepo
       end
 
       # ---- loading ----
-      def load_from_path(repo:, abs_path:)
+      def load_from_path(repo:, abs_path:, front_matter_only: false)
         raw = repo.read(abs_path)
         fm, body = parse_front_matter(raw)
-        rec = new(fm, body:, path: abs_path, repo:)
+        rec = new(fm, body: front_matter_only ? nil : body, path: abs_path, repo:)
         rec.instance_variable_set(:@new_record, false)
         rec.instance_variable_set(:@dirty, false)
         rec.instance_variable_set(:@mtime, abs_path.exist? ? abs_path.mtime : nil)
+        rec.instance_variable_set(:@front_matter_only, true) if front_matter_only
         rec
       end
 
@@ -390,19 +391,31 @@ module FMRepo
 
     # ---- instance state ----
     attr_reader :repo, :path, :mtime
-    attr_accessor :body
 
     def initialize(attrs = {}, body: '', path: nil, repo: nil, **_opts)
       @front_matter = normalize_keys(attrs || {})
-      @body = body.to_s
+      @body = body&.to_s
       @repo = repo
       @path = path && Pathname.new(path.to_s)
       @new_record = true
       @dirty = true
       @mtime = nil
+      @front_matter_only = false
     end
 
-    attr_reader :front_matter
+    attr_reader :front_matter, :body
+
+    # Setting the body explicitly marks the record as no longer front-matter-only,
+    # so subsequent save! calls will serialize the full record (front matter + body).
+    def body=(value)
+      @body = value
+      @front_matter_only = false
+      @dirty = true
+    end
+
+    def front_matter_only?
+      @front_matter_only
+    end
 
     def [](key) = @front_matter[key.to_s]
 
@@ -435,7 +448,13 @@ module FMRepo
       ensure_repo!
       ensure_path!
       materialize_defaults!
-      @repo.write_atomic(@path, serialize)
+      if @front_matter_only
+        # patch_save! writes only the front-matter section; the record remains
+        # front_matter_only? afterward since the body was never loaded into memory.
+        patch_save!
+      else
+        @repo.write_atomic(@path, serialize)
+      end
       @mtime = @path.exist? ? @path.mtime : nil
       @dirty = false
       @new_record = false
@@ -460,6 +479,7 @@ module FMRepo
       @mtime = fresh.mtime
       @dirty = false
       @new_record = false
+      @front_matter_only = false
       self
     end
 
@@ -507,6 +527,28 @@ module FMRepo
       rel = Pathname.new(rel.to_s)
       rel = @repo.resolve_collision(rel)
       @path = @repo.abs(rel)
+    end
+
+    # Updates front matter in-place on disk without loading or replacing the body.
+    # Used when the record was loaded with front_matter_only: true.
+    def patch_save!
+      raise 'Cannot patch_save! a new record' if @new_record
+
+      raw = @repo.read(@path)
+      _old_fm, raw_body = self.class.parse_front_matter(raw)
+      sorted_fm = (@front_matter || {}).sort.to_h
+      yaml = sorted_fm.empty? ? '' : YAML.dump(sorted_fm).sub(/\A---\s*\r?\n/, '')
+      out = +"---\n"
+      out << yaml
+      out << "\n" unless out.end_with?("\n")
+      if raw_body.to_s.empty?
+        out << "---\n"
+      else
+        out << "---\n\n"
+        out << raw_body.to_s
+        out << "\n" unless out.end_with?("\n")
+      end
+      @repo.write_atomic(@path, out)
     end
 
     def normalize_keys(hash)

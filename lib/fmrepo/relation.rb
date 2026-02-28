@@ -65,24 +65,25 @@ module FMRepo
     def to_a
       if @orders.empty? && @limit_n
         docs = load_matching(max: @offset_n + @limit_n)
-        apply_offset_limit(docs)
       else
         docs = load_all
         docs = apply_filters(docs)
         docs = apply_orders(docs)
-        apply_offset_limit(docs)
       end
+      apply_offset_limit(docs)
     end
 
     def first = limit(1).to_a.first
     def count = to_a.length
 
-    def find(id)
+    # NOTE: front_matter_only: is only supported for direct lookups via find.
+    # Bulk iteration via where/all always loads full records including body.
+    def find(id, front_matter_only: false)
       rel = Pathname.new(id.to_s)
       abs = @repo.abs(rel)
       raise NotFound, "No such file: #{rel}" unless abs.exist?
 
-      @model.load_from_path(repo: @repo, abs_path: abs)
+      @model.load_from_path(repo: @repo, abs_path: abs, front_matter_only:)
     end
 
     def find_by(criteria = {})
