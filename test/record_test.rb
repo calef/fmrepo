@@ -373,6 +373,39 @@ class RecordTest < Minitest::Test
     assert_includes content, 'rails'
   end
 
+  def test_dirty_returns_true_for_new_record
+    rec = FMRepo::Record.new({ 'title' => 'Test' })
+    assert rec.dirty?
+  end
+
+  def test_dirty_returns_false_after_save
+    path = File.join(@tmpdir, 'test.md')
+    rec = FMRepo::Record.new({ 'title' => 'Test' }, body: '', path: path, repo: @repo)
+    rec.save!
+    refute rec.dirty?
+  end
+
+  def test_dirty_returns_true_after_modification
+    path = File.join(@tmpdir, 'test.md')
+    rec = FMRepo::Record.new({ 'title' => 'Test' }, body: '', path: path, repo: @repo)
+    rec.save!
+    refute rec.dirty?
+
+    rec['title'] = 'Updated'
+    assert rec.dirty?
+  end
+
+  def test_dirty_returns_false_after_reload
+    path = File.join(@tmpdir, 'test.md')
+    rec = FMRepo::Record.new({ 'title' => 'Test' }, body: '', path: path, repo: @repo)
+    rec.save!
+    rec['title'] = 'Modified'
+    assert rec.dirty?
+
+    rec.reload
+    refute rec.dirty?
+  end
+
   def test_load_from_path_front_matter_only_skips_body
     record = FMRepo::Record.new({ 'title' => 'Test', 'count' => 42 }, body: 'Big XML body here')
     record.instance_variable_set(:@repo, @repo)

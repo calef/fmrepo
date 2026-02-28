@@ -73,8 +73,21 @@ module FMRepo
       apply_offset_limit(docs)
     end
 
-    def first = limit(1).to_a.first
-    def count = to_a.length
+    def first
+      if @orders.empty?
+        load_matching(max: @offset_n + 1).drop(@offset_n).first
+      else
+        to_a.first
+      end
+    end
+
+    def count
+      if @orders.empty? && @limit_n.nil? && @offset_n.zero?
+        load_matching_count
+      else
+        to_a.length
+      end
+    end
 
     # NOTE: front_matter_only: is only supported for direct lookups via find.
     # Bulk iteration via where/all always loads full records including body.
@@ -91,6 +104,22 @@ module FMRepo
     end
 
     private
+
+    def load_matching_count
+      cfg = @model.config
+      raise ArgumentError, "#{@model.name} has no scope glob" unless cfg.glob
+
+      paths = @repo.glob(cfg.glob)
+      paths = apply_excludes(paths, cfg.exclude)
+      return paths.size if @filters.empty?
+
+      count = 0
+      paths.each do |p|
+        rec = @model.load_from_path(repo: @repo, abs_path: p)
+        count += 1 if @filters.all? { |crit| matches_criteria?(rec, crit) }
+      end
+      count
+    end
 
     def load_matching(max:)
       cfg = @model.config

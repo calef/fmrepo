@@ -444,6 +444,10 @@ module FMRepo
       !@new_record
     end
 
+    def dirty?
+      @dirty
+    end
+
     def save!
       ensure_repo!
       ensure_path!

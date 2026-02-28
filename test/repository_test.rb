@@ -121,6 +121,10 @@ class RepositoryTest < Minitest::Test
     assert_equal 'subdir/file.md', rel.to_s
   end
 
+  def test_resolve_collision_has_max_attempts_constant
+    assert_equal 10_000, FMRepo::Repository::MAX_COLLISION_ATTEMPTS
+  end
+
   def test_assert_within_root_allows_paths_in_root
     path = File.join(@tmpdir, 'file.md')
     assert_nil @repo.assert_within_root!(path)
