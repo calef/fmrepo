@@ -73,6 +73,34 @@ class FMRepoTest < Minitest::Test
     FileUtils.rm_rf(repo_root) if repo_root
   end
 
+  def test_configure_resets_registry_when_block_raises
+    repo_root = Dir.mktmpdir('fmrepo-raise-config-')
+    FMRepo.configure do |c|
+      c.repositories = { default: { 'development' => repo_root } }
+    end
+
+    # Fetch to populate the registry cache
+    original_repo = FMRepo.repository_registry.fetch(role: :default, environment: 'development')
+    assert_equal repo_root, original_repo.root.to_s
+
+    # configure with a block that raises — registry should still be reset
+    new_root = Dir.mktmpdir('fmrepo-raise-config-new-')
+    assert_raises(RuntimeError) do
+      FMRepo.configure do |c|
+        c.repositories = { default: { 'development' => new_root } }
+        raise 'boom'
+      end
+    end
+
+    # The registry should have been reset despite the exception,
+    # so fetching should use the new config value (set before the raise)
+    repo = FMRepo.repository_registry.fetch(role: :default, environment: 'development')
+    assert_equal new_root, repo.root.to_s
+  ensure
+    FileUtils.rm_rf(repo_root) if repo_root
+    FileUtils.rm_rf(new_root) if new_root
+  end
+
   private
 
   def clear_model_cache(klass)
