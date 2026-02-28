@@ -83,7 +83,7 @@ class IntegrationTest < Minitest::Test
   def test_all_loads_all_records
     places = Place.all.to_a
     assert_equal 3, places.length
-    assert(places.all? { |p| p.is_a?(Place) })
+    assert(places.all?(Place))
   end
 
   def test_where_filters_by_field

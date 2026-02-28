@@ -20,6 +20,8 @@ Metrics/MethodLength:
 
 Metrics/ClassLength:
   Max: 300
+  Exclude:
+    - 'test/**/*'
 
 Metrics/ModuleLength:
   Max: 200

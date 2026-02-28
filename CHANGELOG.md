@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.16] - 2026-02-28
+
+### Added
+- `front_matter_only: true` option on `find` and `load_from_path` — loads YAML front matter without allocating the body string, reducing memory usage for large files
+- `front_matter_only?` predicate on record instances
+- `patch_save!` (called automatically by `save!` on front-matter-only records) — writes updated front matter back to disk without loading or replacing the body
+- `body=` setter now clears `front_matter_only` state so subsequent `save!` calls serialize the full record
+- `reload` clears `front_matter_only` state and loads the full record from disk
+
 ## [0.2.15] - 2026-02-28
 
 ### Fixed
@@ -205,6 +214,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite (56 tests)
 - Documentation and examples
 
+[0.2.16]: https://github.com/calef/fmrepo/releases/tag/v0.2.16
 [0.2.15]: https://github.com/calef/fmrepo/releases/tag/v0.2.15
 [0.2.14]: https://github.com/calef/fmrepo/releases/tag/v0.2.14
 [0.2.13]: https://github.com/calef/fmrepo/releases/tag/v0.2.13
