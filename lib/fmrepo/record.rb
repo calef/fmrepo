@@ -166,7 +166,7 @@ module FMRepo
       #
       # @param name [Symbol] association name
       # @param class_name [String, nil] explicit class name for the association (e.g., "Writer")
-      # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
       def belongs_to(name, class_name: nil)
         foreign_key = "#{name}_id"
         association_class_name = class_name || name.to_s.split('_').map(&:capitalize).join
