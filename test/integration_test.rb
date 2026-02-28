@@ -275,6 +275,35 @@ class IntegrationTest < Minitest::Test
     end
   end
 
+  def test_where_limit_without_order_stops_reading_files_early
+    # Create enough files so we can observe early termination.
+    # Setup already creates 3 places (seattle, bellevue, spokane) all with county King or Spokane.
+    # Add more King county places so we have plenty of matches beyond the limit.
+    5.times do |i|
+      create_place("extra-#{i}.md", { 'title' => "Extra #{i}", 'county' => 'King', 'tags' => %w[wa] }, "Extra #{i}")
+    end
+
+    # There are now 8 files total, 7 with county=King.
+    # Track how many files load_from_path reads.
+    load_count = 0
+    original_method = Place.method(:load_from_path)
+    Place.define_singleton_method(:load_from_path) do |**kwargs|
+      load_count += 1
+      original_method.call(**kwargs)
+    end
+
+    begin
+      results = Place.where('county' => 'King').limit(2).to_a
+      assert_equal 2, results.length
+      assert(results.all? { |p| p['county'] == 'King' })
+      # Should have loaded far fewer than all 8 files.
+      # The first two King county matches are found before reading everything.
+      assert load_count < 8, "Expected early termination but load_from_path was called #{load_count} times for 8 files"
+    ensure
+      Place.define_singleton_method(:load_from_path, original_method)
+    end
+  end
+
   def test_reserved_fields
     place = Place.find('_places/seattle.md')
 
