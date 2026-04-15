@@ -33,7 +33,7 @@ GEM
     public_suffix (7.0.2)
     racc (1.8.1)
     rainbow (3.1.1)
-    rake (13.3.1)
+    rake (13.4.1)
     regexp_parser (2.11.3)
     rubocop (1.85.0)
       json (~> 2.3)
@@ -71,7 +71,7 @@ DEPENDENCIES
   minitest (~> 6.0)
   mutex_m
   ostruct
-  rake (~> 13.3)
+  rake (~> 13.4)
   rubocop (~> 1.85)
   simplecov (~> 0.22)
 
